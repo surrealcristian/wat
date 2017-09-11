@@ -1,11 +1,27 @@
 #include <stdio.h>
+#include <math.h>
 #include "SDL.h"
 
-#define WINDOW_WIDTH 640
+#define WINDOW_WIDTH 480
 #define WINDOW_HEIGHT 480
 
 
 // # Structs
+
+// ## SDL_Rect
+
+SDL_Rect *sdl_rect_new(void)
+{
+    SDL_Rect *out = malloc(sizeof(SDL_Rect));
+    *out = (SDL_Rect){ };
+
+    return out;
+}
+
+void sdl_rect_free(SDL_Rect *self)
+{
+    free(self);
+}
 
 // ## Sprite
 
@@ -16,15 +32,25 @@ typedef struct Sprite {
     int height;
     int velocity;
     int angle;
+    SDL_Rect *rect;
 } Sprite;
 
 Sprite *sprite_new(void)
 {
     Sprite *out = malloc(sizeof(Sprite));
-
     *out = (Sprite){ };
 
+    SDL_Rect *rect = sdl_rect_new();
+    out->rect = rect;
+
     return out;
+}
+
+void sprite_free(Sprite *self)
+{
+    sdl_rect_free(self->rect);
+
+    free(self);
 }
 
 float sprite_get_x(Sprite *self)
@@ -34,7 +60,15 @@ float sprite_get_x(Sprite *self)
 
 void sprite_set_x(Sprite *self, float value)
 {
+    if (value < 0) {
+        value = 0;
+    } else if (value > WINDOW_WIDTH) {
+        value = WINDOW_WIDTH;
+    }
+
     self->x = value;
+
+    self->rect->x = floor(self->x - (self->width / 2));
 }
 
 float sprite_get_y(Sprite *self)
@@ -44,7 +78,15 @@ float sprite_get_y(Sprite *self)
 
 void sprite_set_y(Sprite *self, float value)
 {
+    if (value < 0) {
+        value = 0;
+    } else if (value > WINDOW_HEIGHT) {
+        value = WINDOW_HEIGHT;
+    }
+
     self->y = value;
+
+    self->rect->y = floor(self->y - (self->height / 2));
 }
 
 int sprite_get_width(Sprite *self)
@@ -54,6 +96,7 @@ int sprite_get_width(Sprite *self)
 
 void sprite_set_width(Sprite *self, int value)
 {
+    self->rect->w = value;
     self->width = value;
 }
 
@@ -64,6 +107,7 @@ int sprite_get_height(Sprite *self)
 
 void sprite_set_height(Sprite *self, int value)
 {
+    self->rect->h = value;
     self->height = value;
 }
 
@@ -89,14 +133,8 @@ void sprite_set_angle(Sprite *self, int value)
 
 int sprite_render(Sprite *self, SDL_Renderer *renderer)
 {
-    SDL_Rect r;
-    r.x = self->x;
-    r.y = self->y;
-    r.w = self->width;
-    r.h = self->height;
-
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    int tmp = SDL_RenderFillRect(renderer, &r);
+    int tmp = SDL_RenderFillRect(renderer, self->rect);
 
     if (tmp == 0) {
         return 0;
@@ -114,11 +152,9 @@ typedef struct Background {
 Background *background_new(void)
 {
     Background *out = malloc(sizeof(Background));
-
     *out = (Background){ };
 
     return out;
-
 }
 
 int background_render(Background *self, SDL_Renderer *renderer)
@@ -222,15 +258,52 @@ int main(void)
     sprite_render(sprite1, renderer);
     SDL_RenderPresent(renderer);
 
-    while (1) {
-        SDL_Event e;
+    // -----
 
-        if (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {
+    SDL_Delay(1000);
+
+    // -----
+
+    sprite_set_x(sprite1, 1000);
+    sprite_set_y(sprite1, 1000);
+
+    background_render(background, renderer);
+    sprite_render(sprite1, renderer);
+    SDL_RenderPresent(renderer);
+
+    while (1) {
+        SDL_Event event;
+
+        if (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
                 break;
             }
         }
+
+        if (event.type == SDL_KEYDOWN) {
+            float prev_x;
+
+            switch (event.key.keysym.sym) {
+
+            case SDLK_LEFT:
+                prev_x = sprite_get_x(sprite1);
+                sprite_set_x(sprite1, prev_x - 10);
+                break;
+
+            case SDLK_RIGHT:
+                prev_x = sprite_get_x(sprite1);
+                sprite_set_x(sprite1, prev_x + 10);
+                break;
+
+            }
+        }
+
+        background_render(background, renderer);
+        sprite_render(sprite1, renderer);
+        SDL_RenderPresent(renderer);
     }
+
+    sprite_free(sprite1);
 
     // [destroy renderer]
 

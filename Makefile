@@ -1,7 +1,7 @@
 P=wat
-SOURCES=wat.c sdl_rect.c background.c sprite.c game.c
-OBJECTS=wat.o sdl_rect.o background.o sprite.o game.o
-HEADERS=wat.h sdl_rect.h background.h sprite.h game.h
+SOURCES=wat.c sdl_rect.c background.c actor.c game.c
+OBJECTS=wat.o sdl_rect.o background.o actor.o game.o
+HEADERS=wat.h sdl_rect.h background.h actor.h game.h
 OUT=wat
 CFLAGS=-g -Wall -O3 `sdl2-config --cflags`
 LDLIBS=-lm `sdl2-config --libs`

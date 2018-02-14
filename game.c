@@ -1,6 +1,6 @@
 #include "SDL.h"
 #include "background.h"
-#include "sprite.h"
+#include "actor.h"
 #include "game.h"
 
 Game *game_new(void)
@@ -19,34 +19,21 @@ void game_free(Game *self)
 void game_run(Game *game, SDL_Renderer *renderer)
 {
     Background *background = background_new();
-    Sprite *sprite1 = sprite_new();
+    Actor *actor1 = actor_new();
 
     background_render(background, renderer);
     SDL_RenderPresent(renderer);
 
-    sprite_set_width(sprite1, 32);
-    sprite_set_height(sprite1, 32);
-    sprite_set_velocity(sprite1, 7);
-    sprite_set_angle(sprite1, 7);
+    actor_set_width(actor1, 32);
+    actor_set_height(actor1, 32);
+    actor_set_velocity(actor1, 7);
+    actor_set_angle(actor1, 7);
 
-    sprite_set_x(sprite1, 300);
-    sprite_set_y(sprite1, 300);
-
-    background_render(background, renderer);
-    sprite_render(sprite1, renderer);
-    SDL_RenderPresent(renderer);
-
-    // -----
-
-    SDL_Delay(1000);
-
-    // -----
-
-    sprite_set_x(sprite1, 200);
-    sprite_set_y(sprite1, 200);
+    actor_set_x(actor1, 300);
+    actor_set_y(actor1, 300);
 
     background_render(background, renderer);
-    sprite_render(sprite1, renderer);
+    actor_render(actor1, renderer);
     SDL_RenderPresent(renderer);
 
     // -----
@@ -55,11 +42,24 @@ void game_run(Game *game, SDL_Renderer *renderer)
 
     // -----
 
-    sprite_set_x(sprite1, 1000);
-    sprite_set_y(sprite1, 1000);
+    actor_set_x(actor1, 200);
+    actor_set_y(actor1, 200);
 
     background_render(background, renderer);
-    sprite_render(sprite1, renderer);
+    actor_render(actor1, renderer);
+    SDL_RenderPresent(renderer);
+
+    // -----
+
+    SDL_Delay(1000);
+
+    // -----
+
+    actor_set_x(actor1, 1000);
+    actor_set_y(actor1, 1000);
+
+    background_render(background, renderer);
+    actor_render(actor1, renderer);
     SDL_RenderPresent(renderer);
 
     int key_left_pressed = 0;
@@ -123,30 +123,30 @@ void game_run(Game *game, SDL_Renderer *renderer)
         float prev_y;
 
         if (key_right_pressed) {
-            prev_x = sprite_get_x(sprite1);
-            sprite_set_x(sprite1, prev_x + 10);
+            prev_x = actor_get_x(actor1);
+            actor_set_x(actor1, prev_x + 10);
         }
 
         if (key_left_pressed) {
-            prev_x = sprite_get_x(sprite1);
-            sprite_set_x(sprite1, prev_x - 10);
+            prev_x = actor_get_x(actor1);
+            actor_set_x(actor1, prev_x - 10);
         }
 
         if (key_up_pressed) {
-            prev_y = sprite_get_y(sprite1);
-            sprite_set_y(sprite1, prev_y - 10);
+            prev_y = actor_get_y(actor1);
+            actor_set_y(actor1, prev_y - 10);
         }
 
         if (key_down_pressed) {
-            prev_y = sprite_get_y(sprite1);
-            sprite_set_y(sprite1, prev_y + 10);
+            prev_y = actor_get_y(actor1);
+            actor_set_y(actor1, prev_y + 10);
         }
 
         background_render(background, renderer);
-        sprite_render(sprite1, renderer);
+        actor_render(actor1, renderer);
         SDL_RenderPresent(renderer);
     }
 
-    sprite_free(sprite1);
+    actor_free(actor1);
     background_free(background);
 }

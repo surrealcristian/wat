@@ -4,7 +4,7 @@
 #include "SDL.h"
 #include "sdl_rect.h"
 #include "background.h"
-#include "sprite.h"
+#include "actor.h"
 
 typedef struct Game {
 

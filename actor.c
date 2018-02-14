@@ -1,9 +1,9 @@
-#include "sprite.h"
+#include "actor.h"
 #include "sdl_rect.h"
 
-Sprite *sprite_new(void)
+Actor *actor_new(void)
 {
-    Sprite *out = malloc(sizeof(Sprite));
+    Actor *out = malloc(sizeof(Actor));
 
     SDL_Rect *rect = sdl_rect_new();
     out->rect = rect;
@@ -11,19 +11,19 @@ Sprite *sprite_new(void)
     return out;
 }
 
-void sprite_free(Sprite *self)
+void actor_free(Actor *self)
 {
     sdl_rect_free(self->rect);
 
     free(self);
 }
 
-float sprite_get_x(Sprite *self)
+float actor_get_x(Actor *self)
 {
     return self->x;
 }
 
-void sprite_set_x(Sprite *self, float value)
+void actor_set_x(Actor *self, float value)
 {
     if (value < 0) {
         value = 0;
@@ -36,12 +36,12 @@ void sprite_set_x(Sprite *self, float value)
     self->rect->x = floor(self->x - (self->width / 2));
 }
 
-float sprite_get_y(Sprite *self)
+float actor_get_y(Actor *self)
 {
     return self->y;
 }
 
-void sprite_set_y(Sprite *self, float value)
+void actor_set_y(Actor *self, float value)
 {
     if (value < 0) {
         value = 0;
@@ -54,49 +54,49 @@ void sprite_set_y(Sprite *self, float value)
     self->rect->y = floor(self->y - (self->height / 2));
 }
 
-int sprite_get_width(Sprite *self)
+int actor_get_width(Actor *self)
 {
     return self->width;
 }
 
-void sprite_set_width(Sprite *self, int value)
+void actor_set_width(Actor *self, int value)
 {
     self->rect->w = value;
     self->width = value;
 }
 
-int sprite_get_height(Sprite *self)
+int actor_get_height(Actor *self)
 {
     return self->height;
 }
 
-void sprite_set_height(Sprite *self, int value)
+void actor_set_height(Actor *self, int value)
 {
     self->rect->h = value;
     self->height = value;
 }
 
-int sprite_get_velocity(Sprite *self)
+int actor_get_velocity(Actor *self)
 {
     return self->velocity;
 }
 
-void sprite_set_velocity(Sprite *self, int value)
+void actor_set_velocity(Actor *self, int value)
 {
     self->velocity = value;
 }
 
-int sprite_get_angle(Sprite *self)
+int actor_get_angle(Actor *self)
 {
     return self->angle;
 }
 
-void sprite_set_angle(Sprite *self, int value)
+void actor_set_angle(Actor *self, int value)
 {
     self->angle = value;
 }
 
-int sprite_render(Sprite *self, SDL_Renderer *renderer)
+int actor_render(Actor *self, SDL_Renderer *renderer)
 {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     int tmp = SDL_RenderFillRect(renderer, self->rect);

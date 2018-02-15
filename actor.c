@@ -1,19 +1,19 @@
 #include "actor.h"
-#include "sdl_rect.h"
+
+UT_icd sdl_rect_icd = { sizeof(SDL_Rect), NULL, NULL, NULL };
 
 Actor *actor_new(void)
 {
     Actor *out = malloc(sizeof(Actor));
 
-    SDL_Rect *rect = sdl_rect_new();
-    out->rect = rect;
+    utarray_new(out->rects, &sdl_rect_icd);
 
     return out;
 }
 
 void actor_free(Actor *self)
 {
-    sdl_rect_free(self->rect);
+    utarray_free(self->rects);
 
     free(self);
 }
@@ -33,7 +33,15 @@ void actor_set_x(Actor *self, float value)
 
     self->x = value;
 
-    self->rect->x = floor(self->x - (self->width / 2));
+    SDL_Rect *p;
+
+    for(
+        p = (SDL_Rect*)utarray_front(self->rects);
+        p != NULL;
+        p = (SDL_Rect*)utarray_next(self->rects, p)
+    ) {
+        p->x = floor(self->x - (self->width / 2));
+    }
 }
 
 float actor_get_y(Actor *self)
@@ -51,7 +59,15 @@ void actor_set_y(Actor *self, float value)
 
     self->y = value;
 
-    self->rect->y = floor(self->y - (self->height / 2));
+    SDL_Rect *p;
+
+    for(
+        p = (SDL_Rect*)utarray_front(self->rects);
+        p != NULL;
+        p = (SDL_Rect*)utarray_next(self->rects, p)
+    ) {
+        p->y = floor(self->y - (self->width / 2));
+    }
 }
 
 int actor_get_width(Actor *self)
@@ -61,8 +77,17 @@ int actor_get_width(Actor *self)
 
 void actor_set_width(Actor *self, int value)
 {
-    self->rect->w = value;
     self->width = value;
+
+    SDL_Rect *p;
+
+    for(
+        p = (SDL_Rect*)utarray_front(self->rects);
+        p != NULL;
+        p = (SDL_Rect*)utarray_next(self->rects, p)
+    ) {
+        p->w = value;
+    }
 }
 
 int actor_get_height(Actor *self)
@@ -72,8 +97,17 @@ int actor_get_height(Actor *self)
 
 void actor_set_height(Actor *self, int value)
 {
-    self->rect->h = value;
     self->height = value;
+
+    SDL_Rect *p;
+
+    for(
+        p = (SDL_Rect*)utarray_front(self->rects);
+        p != NULL;
+        p = (SDL_Rect*)utarray_next(self->rects, p)
+    ) {
+        p->h = value;
+    }
 }
 
 int actor_get_velocity(Actor *self)
@@ -96,14 +130,29 @@ void actor_set_angle(Actor *self, int value)
     self->angle = value;
 }
 
+void actor_add_rect(Actor *self)
+{
+    SDL_Rect *rect = sdl_rect_new();
+
+    utarray_push_back(self->rects, &rect);
+}
+
 int actor_render(Actor *self, SDL_Renderer *renderer)
 {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    int tmp = SDL_RenderFillRect(renderer, self->rect);
+    SDL_Rect *p;
 
-    if (tmp == 0) {
-        return 0;
+    for(
+        p = (SDL_Rect*)utarray_front(self->rects);
+        p != NULL;
+        p = (SDL_Rect*)utarray_next(self->rects, p)
+    ) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        int tmp = SDL_RenderFillRect(renderer, p);
+
+        if (tmp != 0) {
+            return -1;
+        }
     }
 
-    return -1;
+    return 0;
 }

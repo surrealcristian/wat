@@ -1,4 +1,3 @@
-#include "SDL.h"
 #include "background.h"
 
 Background *background_new(void)

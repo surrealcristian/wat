@@ -1,6 +1,3 @@
-#include "SDL.h"
-#include "background.h"
-#include "actor.h"
 #include "game.h"
 
 Game *game_new(void)
@@ -23,6 +20,8 @@ void game_run(Game *game, SDL_Renderer *renderer)
 
     background_render(background, renderer);
     SDL_RenderPresent(renderer);
+
+    actor_add_rect(actor1);
 
     actor_set_width(actor1, 32);
     actor_set_height(actor1, 32);

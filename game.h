@@ -2,8 +2,6 @@
 #define GAME_H
 
 #include "SDL.h"
-#include "sdl_rect.h"
-#include "background.h"
 #include "actor.h"
 
 typedef struct Game {

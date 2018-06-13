@@ -1,7 +1,6 @@
 #ifndef ACTOR_H
 #define ACTOR_H
 
-#include "utarray.h"
 #include "SDL.h"
 #include "sdl_rect.h"
 
@@ -15,7 +14,8 @@ typedef struct Actor {
     int height;
     int velocity;
     int angle;
-    UT_array *rects;
+    struct Actor *prev;
+    struct Actor *next;
 } Actor;
 
 Actor *actor_new(void);

@@ -1,4 +1,5 @@
 #include "actor.h"
+#include "utarray.h"
 
 UT_icd sdl_rect_icd = { sizeof(SDL_Rect), NULL, NULL, NULL };
 

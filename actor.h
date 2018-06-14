@@ -3,7 +3,9 @@
 
 #include "SDL.h"
 #include "sdl_rect.h"
+#include "utarray.h"
 
+//TODO remove this defines
 #define WINDOW_WIDTH 480
 #define WINDOW_HEIGHT 480
 
@@ -14,6 +16,7 @@ typedef struct Actor {
     int height;
     int velocity;
     int angle;
+    UT_array *rects;
     struct Actor *prev;
     struct Actor *next;
 } Actor;

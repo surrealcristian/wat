@@ -1,7 +1,7 @@
 P=wat
 SOURCES=wat.c
 OBJECTS=wat.o
-HEADERS=wat.h utarray.h utlist.h
+HEADERS=wat.h
 OUT=wat
 CFLAGS=-Wall -O3 `sdl2-config --cflags`
 #CFLAGS=-Wall -g -O0 `sdl2-config --cflags` # CFLAGS for debug

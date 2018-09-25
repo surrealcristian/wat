@@ -9,10 +9,74 @@
 #define ACTOR_RECT_N 1
 
 
-// NAV_ActorInputComponent
-struct ActorInputComponent {
+// NAV_Keys
+struct Keys {
+    int left_pressed;
+    int right_pressed;
+    int up_pressed;
+    int down_pressed;
 };
-// END NAV_ActorInputComponent
+// END NAV_Keys
+
+
+// NAV_InputComponent
+struct InputComponent {
+    struct Keys *keys;
+};
+
+void input_component_set_keys(struct InputComponent *self, struct Keys *keys) {
+    self->keys = keys;
+}
+
+void input_component_update(struct InputComponent *self, SDL_Event *event) {
+    int sym;
+
+    if (event->type == SDL_KEYDOWN) {
+        if (event->key.repeat) {
+            return;
+        }
+
+        sym = event->key.keysym.sym;
+
+        if (sym == SDLK_RIGHT) {
+            self->keys->right_pressed = 1;
+        } else if (sym == SDLK_LEFT) {
+            self->keys->left_pressed = 1;
+        } else if (sym == SDLK_UP) {
+            self->keys->up_pressed = 1;
+        } else if (sym == SDLK_DOWN) {
+            self->keys->down_pressed = 1;
+        }
+    } else if (event->type == SDL_KEYUP) {
+        if (event->key.repeat) {
+            return;
+        }
+
+        sym = event->key.keysym.sym;
+
+        if (sym == SDLK_RIGHT) {
+            self->keys->right_pressed = 0;
+        } else if (sym == SDLK_LEFT) {
+            self->keys->left_pressed = 0;
+        } else if (sym == SDLK_UP) {
+            self->keys->up_pressed = 0;
+        } else if (sym == SDLK_DOWN) {
+            self->keys->down_pressed = 0;
+        }
+    }
+}
+// END NAV_InputComponent
+
+
+// NAV_ActorPhysicsComponent
+struct ActorPhysicsComponent {
+    struct Actor *actor;
+    float x;
+    float y;
+    float w;
+    float h;
+};
+// END NAV_ActorPhysicsComponent
 
 
 // NAV_ActorGraphicsComponent
@@ -25,10 +89,6 @@ struct ActorGraphicsComponent {
     SDL_Rect rects[ACTOR_RECT_N];
 };
 
-void actor_graphics_component_set_actor(struct ActorGraphicsComponent *self, struct Actor *actor);
-void actor_graphics_component_set_position(struct ActorGraphicsComponent *self, float x, float y);
-void actor_graphics_component_update(struct ActorGraphicsComponent *self, SDL_Renderer *renderer);
-
 void actor_graphics_component_set_actor(struct ActorGraphicsComponent *self, struct Actor *actor) {
     self->actor = actor;
 }
@@ -37,7 +97,14 @@ void actor_graphics_component_set_position(struct ActorGraphicsComponent *self, 
     self->x = x;
     self->y = y;
 
-    //TODO: Update SDL_Rects
+    for (int i = 0; i < ACTOR_RECT_N; i++) {
+        SDL_Rect *r = &self->rects[i];
+
+        r->x = floor(self->x - (self->w / 2));
+        r->y = floor(self->y - (self->h / 2));
+        r->w = self->w;
+        r->h = self->h;
+    }
 }
 
 void actor_graphics_component_update(struct ActorGraphicsComponent *self, SDL_Renderer *renderer) {
@@ -54,9 +121,6 @@ void actor_graphics_component_update(struct ActorGraphicsComponent *self, SDL_Re
 struct ActorGraphicsComponentManager {
     struct ActorGraphicsComponent *actor_graphics_components;
 };
-
-void actor_graphics_component_manager_init(struct ActorGraphicsComponentManager *self, struct ActorGraphicsComponent *actor_graphics_components);
-void actor_graphics_component_manager_update(struct ActorGraphicsComponentManager *self, SDL_Renderer *renderer);
 
 void actor_graphics_component_manager_init(struct ActorGraphicsComponentManager *self, struct ActorGraphicsComponent *actor_graphics_components) {
     self->actor_graphics_components = actor_graphics_components;
@@ -96,23 +160,7 @@ struct Actor {
     int w;
     int h;
     int velocity;
-    int angle;
 };
-
-void actor_set_actor_graphics_component(struct Actor *self, struct ActorGraphicsComponent *actor_graphics_component);
-float actor_get_x(struct Actor *self);
-void actor_set_x(struct Actor *self, float value);
-float actor_get_y(struct Actor *self);
-void actor_set_y(struct Actor *self, float value);
-int actor_get_w(struct Actor *self);
-void actor_set_w(struct Actor *self, int value);
-int actor_get_h(struct Actor *self);
-void actor_set_h(struct Actor *self, int value);
-int actor_get_velocity(struct Actor *self);
-void actor_set_velocity(struct Actor *self, int value);
-int actor_get_angle(struct Actor *self);
-void actor_set_angle(struct Actor *self, int value);
-
 
 void actor_set_actor_graphics_component(struct Actor *self, struct ActorGraphicsComponent *actor_graphics_component) {
     self->actor_graphics_component = actor_graphics_component;
@@ -173,14 +221,6 @@ int actor_get_velocity(struct Actor *self) {
 void actor_set_velocity(struct Actor *self, int value) {
     self->velocity = value;
 }
-
-int actor_get_angle(struct Actor *self) {
-    return self->angle;
-}
-
-void actor_set_angle(struct Actor *self, int value) {
-    self->angle = value;
-}
 // END NAV_Actor
 
 
@@ -188,8 +228,6 @@ void actor_set_angle(struct Actor *self, int value) {
 struct ActorManager {
     struct Actor *actors;
 };
-
-void actor_manager_init(struct ActorManager *self, struct Actor *actors, struct ActorGraphicsComponent *actor_graphics_components);
 
 void actor_manager_init(struct ActorManager *self, struct Actor *actors, struct ActorGraphicsComponent *actor_graphics_components) {
     self->actors = actors;
@@ -204,12 +242,22 @@ void actor_manager_init(struct ActorManager *self, struct Actor *actors, struct 
         a->w = 20;
         a->h = 40;
         a->velocity = 0;
-        a->angle = 0;
     }
 }
 // END NAV_ActorManager
 
 
+// NAV_MiscFunctions
+double performance_counters_to_ms(Uint64 start, Uint64 end) {
+    double ms = (double)((end - start) * 1000) / SDL_GetPerformanceFrequency();
+
+    return ms;
+}
+// END NAV_MiscFunctions
+
+
+struct Keys keys;
+struct InputComponent input_component;
 struct ActorGraphicsComponent actor_graphics_component_array[ACTOR_N];
 struct ActorGraphicsComponentManager actor_graphics_component_manager;
 struct Actor actor_array[ACTOR_N];
@@ -222,178 +270,73 @@ struct Game {
 
 };
 
-void game_run(struct Game *game, SDL_Renderer *renderer);
-
 void game_run(struct Game *self, SDL_Renderer *renderer) {
-    int key_left_pressed = 0;
-    int key_right_pressed = 0;
-    int key_up_pressed = 0;
-    int key_down_pressed = 0;
-
     int keep_running = 1;
 
-    double loop_tick_sleep_ms = 2;
+    float xxx_prev_x;
+    float xxx_prev_y;
 
-    Uint64 loop_tick_start = 0;
-    Uint64 loop_tick_end_no_delay = 0;
-    Uint64 loop_tick_end = 0;
-    double loop_tick_no_delay_ms = 0;
-    double loop_tick_ms;
-
-    double update_ideal_ms = 8.33;
-    double update_acum_ms = 0;
-    Uint64 update_tick_start = 0;
-    Uint64 update_tick_end = 0;
-    double update_tick_ms = 0;
-
-    double render_ideal_ms = 16.66;
-    double render_acum_ms = 0;
-    Uint64 render_tick_start = 0;
-    Uint64 render_tick_end = 0;
-    double render_tick_ms = 0;
-
-    int sym;
-
-    float prev_x;
-    float prev_y;
-
-    update_tick_start = SDL_GetPerformanceCounter();
-    render_tick_start = SDL_GetPerformanceCounter();
+    Uint64 previous = SDL_GetPerformanceCounter();
+    double lag = 0.0;
+    double MS_PER_UPDATE = 16.00;
 
     while (keep_running) {
-        loop_tick_start = SDL_GetPerformanceCounter();
+        Uint64 current = SDL_GetPerformanceCounter();
+        double elapsed = performance_counters_to_ms(previous, current);
+        previous = current;
+        lag += elapsed;
 
-        update_tick_end = SDL_GetPerformanceCounter();
+        SDL_Event event;
 
-        update_tick_ms = (double)((update_tick_end - update_tick_start) * 1000) / SDL_GetPerformanceFrequency();
-
-        update_acum_ms = update_acum_ms + update_tick_ms;
-
-        if (update_acum_ms >= update_ideal_ms) {
-            SDL_Event event;
-
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    keep_running = 0;
-                } else if (event.type == SDL_KEYDOWN) {
-                    if (!event.key.repeat) {
-                        sym = event.key.keysym.sym;
-
-                        if (sym == SDLK_RIGHT) {
-                            key_right_pressed = 1;
-                        }
-
-                        if (sym == SDLK_LEFT) {
-                            key_left_pressed = 1;
-                        }
-
-                        if (sym == SDLK_UP) {
-                            key_up_pressed = 1;
-                        }
-
-                        if (sym == SDLK_DOWN) {
-                            key_down_pressed = 1;
-                        }
-                    }
-                } else if (event.type == SDL_KEYUP) {
-                    if (!event.key.repeat) {
-                        sym = event.key.keysym.sym;
-
-                        if (sym == SDLK_RIGHT) {
-                            key_right_pressed = 0;
-                        }
-
-                        if (sym == SDLK_LEFT) {
-                            key_left_pressed = 0;
-                        }
-
-                        if (sym == SDLK_UP) {
-                            key_up_pressed = 0;
-                        }
-
-                        if (sym == SDLK_DOWN) {
-                            key_down_pressed = 0;
-                        }
-                    }
-
-                }
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                keep_running = 0;
             }
 
-            double actor_px_per_second = 250;
-            double distance = (actor_px_per_second * update_acum_ms) / 1000;
-
-            if (key_right_pressed) {
-                /*
-                prev_x = actor_get_x(actor1);
-                actor_set_x(actor1, prev_x + distance);
-                */
-            }
-
-            if (key_left_pressed) {
-                /*
-                prev_x = actor_get_x(actor1);
-                actor_set_x(actor1, prev_x - distance);
-                */
-            }
-
-            if (key_up_pressed) {
-                /*
-                prev_y = actor_get_y(actor1);
-                actor_set_y(actor1, prev_y - distance);
-                */
-            }
-
-            if (key_down_pressed) {
-                /*
-                prev_y = actor_get_y(actor1);
-                actor_set_y(actor1, prev_y + distance);
-                */
-            }
-
-            update_acum_ms = 0;
+            input_component_update(&input_component, &event);
         }
 
-        update_tick_start = SDL_GetPerformanceCounter();
+        double distance = 20.00; //TODO: CHANGE ME
 
-        // --------------------------------------------------------------------
-        // Render
-        // --------------------------------------------------------------------
-
-        render_tick_end = SDL_GetPerformanceCounter();
-
-        render_tick_ms = (double)((render_tick_end - render_tick_start) * 1000) / SDL_GetPerformanceFrequency();
-
-        render_acum_ms = render_acum_ms + render_tick_ms;
-
-        if (render_acum_ms >= render_ideal_ms) {
-            SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE); // grey
-
-            int tmp = SDL_RenderClear(renderer);
-
-            if (tmp != 0) {
-                SDL_Log("ERROR: SDL_RenderClear() (%s)", SDL_GetError());
+        while (lag >= MS_PER_UPDATE) {
+            if (keys.right_pressed) {
+                xxx_prev_x = actor_get_x(&actor_array[0]);
+                actor_set_x(&actor_array[0], xxx_prev_x + distance);
             }
 
-            actor_graphics_component_manager_update(&actor_graphics_component_manager, renderer);
+            if (keys.left_pressed) {
+                xxx_prev_x = actor_get_x(&actor_array[0]);
+                actor_set_x(&actor_array[0], xxx_prev_x - distance);
+            }
 
-            SDL_RenderPresent(renderer);
+            if (keys.up_pressed) {
+                xxx_prev_y = actor_get_y(&actor_array[0]);
+                actor_set_y(&actor_array[0], xxx_prev_y - distance);
+            }
 
-            render_acum_ms = 0;
+            if (keys.down_pressed) {
+                xxx_prev_y = actor_get_y(&actor_array[0]);
+                actor_set_y(&actor_array[0], xxx_prev_y + distance);
+            }
+
+            lag -= MS_PER_UPDATE;
+
+            // SDL_Delay(xxx_loop_tick_sleep_ms - xxx_loop_tick_no_delay_ms);
         }
 
-        render_tick_start = SDL_GetPerformanceCounter();
+        // RENDER
 
-        loop_tick_end_no_delay = SDL_GetPerformanceCounter();
+        SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE); // grey
 
-        loop_tick_no_delay_ms = (double)((loop_tick_end_no_delay - loop_tick_start) * 1000) / SDL_GetPerformanceFrequency();
+        int tmp = SDL_RenderClear(renderer);
 
-        if (loop_tick_sleep_ms > loop_tick_no_delay_ms) {
-            SDL_Delay(loop_tick_sleep_ms - loop_tick_no_delay_ms);
+        if (tmp != 0) {
+            SDL_Log("ERROR: SDL_RenderClear() (%s)", SDL_GetError());
         }
 
-        loop_tick_end = SDL_GetPerformanceCounter();
+        actor_graphics_component_manager_update(&actor_graphics_component_manager, renderer);
 
-        loop_tick_ms = (double)((loop_tick_end - loop_tick_start) * 1000) / SDL_GetPerformanceFrequency();
+        SDL_RenderPresent(renderer);
     }
 }
 // END NAV_Game
@@ -402,7 +345,6 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
 // NAV_Main
 int main(void) {
     // init SDL
-
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         SDL_Log("ERROR: SDL_Init() (%s)", SDL_GetError());
         return 1;
@@ -411,7 +353,6 @@ int main(void) {
     SDL_Log("INFO: SDL_Init()");
 
     // create window
-
     SDL_Window *window = SDL_CreateWindow(
         "SHMUP",
         SDL_WINDOWPOS_UNDEFINED,
@@ -433,13 +374,11 @@ int main(void) {
     SDL_Log("INFO: SDL_CreateWindow()");
 
     // create renderer
-
     SDL_Renderer *renderer = SDL_CreateRenderer(
         window,
         -1,
         //SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
         SDL_RENDERER_ACCELERATED
-        //SDL_RENDERER_SOFTWARE
     );
 
     if (renderer == NULL) {
@@ -456,23 +395,21 @@ int main(void) {
 
     SDL_Log("INFO: SDL_CreateRenderer()");
 
+    input_component_set_keys(&input_component, &keys);
     actor_graphics_component_manager_init(&actor_graphics_component_manager, actor_graphics_component_array);
     actor_manager_init(&actor_manager, actor_array, actor_graphics_component_array);
 
     game_run(&game, renderer);
 
     // destroy renderer
-
     SDL_DestroyRenderer(renderer);
     SDL_Log("INFO: SDL_DestroyRenderer()");
 
     // destroy window
-
     SDL_DestroyWindow(window);
     SDL_Log("INFO: SDL_DestroyWindow()");
 
     // quit SDL
-
     SDL_Quit();
     SDL_Log("INFO: SDL_Quit()");
 

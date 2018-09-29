@@ -9,6 +9,13 @@
 #define ACTOR_RECT_N 1
 
 
+// NAV_Declarations
+//   NAV_Keys
+//   NAV_InputComponent
+
+
+// NAV_Declarations
+
 // NAV_Keys
 struct Keys {
     int left_pressed;
@@ -24,6 +31,102 @@ struct InputComponent {
     struct Keys *keys;
 };
 
+void input_component_set_keys(struct InputComponent *self, struct Keys *keys);
+void input_component_update(struct InputComponent *self, SDL_Event *event);
+// END NAV_InputComponent
+
+
+// NAV_Actor
+struct Actor {
+    float x;
+    float y;
+    int w;
+    int h;
+    int velocity;
+};
+
+float actor_get_x(struct Actor *self);
+void actor_set_x(struct Actor *self, float value);
+float actor_get_y(struct Actor *self);
+void actor_set_y(struct Actor *self, float value);
+int actor_get_w(struct Actor *self);
+void actor_set_w(struct Actor *self, int value);
+int actor_get_h(struct Actor *self);
+void actor_set_h(struct Actor *self, int value);
+int actor_get_velocity(struct Actor *self);
+void actor_set_velocity(struct Actor *self, int value);
+// END NAV_Actor
+
+
+// NAV_Player
+struct Player {
+    float x;
+    float y;
+    int w;
+    int h;
+    int velocity;
+    SDL_Rect rect;
+};
+
+void player_init(struct Player *self, float x, float y, int w, int h, int velocity);
+float player_get_x(struct Player *self);
+void player_set_x(struct Player *self, float value);
+float player_get_y(struct Player *self);
+void player_set_y(struct Player *self, float value);
+int player_get_w(struct Player *self);
+void player_set_w(struct Player *self, int value);
+int player_get_h(struct Player *self);
+void player_set_h(struct Player *self, int value);
+int player_get_velocity(struct Player *self);
+void player_set_velocity(struct Player *self, int value);
+void player_update(struct Player *self);
+void player_render(struct Player *self, SDL_Renderer *renderer);
+// END NAV_Player
+
+
+// NAV_ActorManager
+struct ActorManager {
+    struct Actor *actors;
+};
+
+void actor_manager_init(struct ActorManager *self, struct Actor *actors);
+// END NAV_ActorManager
+
+
+// NAV_MiscFunctions
+double performance_counters_to_ms(Uint64 start, Uint64 end);
+// END NAV_MiscFunctions
+
+
+// NAV_Game
+struct Game {
+
+};
+
+void game_run(struct Game *self, SDL_Renderer *renderer);
+// END NAV_Game
+
+
+// NAV_Main
+int main(void);
+// END NAV_Main
+
+// END NAV_Declarations
+
+
+// NAV_GlobalVariables
+struct Keys keys;
+struct InputComponent input_component;
+struct Actor actor_array[ACTOR_N];
+struct ActorManager actor_manager;
+struct Player player;
+struct Game game;
+// END NAV_GlobalVariables
+
+
+// NAV_Code
+
+// NAV_InputComponent
 void input_component_set_keys(struct InputComponent *self, struct Keys *keys) {
     self->keys = keys;
 }
@@ -68,104 +171,7 @@ void input_component_update(struct InputComponent *self, SDL_Event *event) {
 // END NAV_InputComponent
 
 
-// NAV_ActorPhysicsComponent
-struct ActorPhysicsComponent {
-    struct Actor *actor;
-    float x;
-    float y;
-    float w;
-    float h;
-};
-// END NAV_ActorPhysicsComponent
-
-
-// NAV_ActorGraphicsComponent
-struct ActorGraphicsComponent {
-    struct Actor *actor;
-    float x;
-    float y;
-    float w;
-    float h;
-    SDL_Rect rects[ACTOR_RECT_N];
-};
-
-void actor_graphics_component_set_actor(struct ActorGraphicsComponent *self, struct Actor *actor) {
-    self->actor = actor;
-}
-
-void actor_graphics_component_set_position(struct ActorGraphicsComponent *self, float x, float y) {
-    self->x = x;
-    self->y = y;
-
-    for (int i = 0; i < ACTOR_RECT_N; i++) {
-        SDL_Rect *r = &self->rects[i];
-
-        r->x = floor(self->x - (self->w / 2));
-        r->y = floor(self->y - (self->h / 2));
-        r->w = self->w;
-        r->h = self->h;
-    }
-}
-
-void actor_graphics_component_update(struct ActorGraphicsComponent *self, SDL_Renderer *renderer) {
-    for (int i = 0; i < ACTOR_RECT_N; i++) {
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-
-        SDL_RenderFillRect(renderer, &self->rects[i]);
-    }
-}
-// END NAV_ActorGraphicsComponent
-
-
-// NAV_ActorGraphicsComponentManager
-struct ActorGraphicsComponentManager {
-    struct ActorGraphicsComponent *actor_graphics_components;
-};
-
-void actor_graphics_component_manager_init(struct ActorGraphicsComponentManager *self, struct ActorGraphicsComponent *actor_graphics_components) {
-    self->actor_graphics_components = actor_graphics_components;
-
-    for (int i = 0; i < ACTOR_N; i++) {
-        struct ActorGraphicsComponent *c = &self->actor_graphics_components[i];
-
-        c->x = 0;
-        c->y = 0;
-        c->w = 20;
-        c->h = 40;
-
-        for (int j = 0; j < ACTOR_RECT_N; j++) {
-            SDL_Rect *r = &c->rects[j];
-
-            r->x = floor(c->x - (c->w / 2));
-            r->y = floor(c->y - (c->h / 2));
-            r->w = c->w;
-            r->h = c->h;
-        }
-    }
-}
-
-void actor_graphics_component_manager_update(struct ActorGraphicsComponentManager *self, SDL_Renderer *renderer) {
-    for (int i = 0; i < ACTOR_N; i++) {
-        actor_graphics_component_update(&self->actor_graphics_components[i], renderer);
-    }
-}
-// END NAV_ActorGraphicsComponentManager
-
-
 // NAV_Actor
-struct Actor {
-    struct ActorGraphicsComponent *actor_graphics_component;
-    float x;
-    float y;
-    int w;
-    int h;
-    int velocity;
-};
-
-void actor_set_actor_graphics_component(struct Actor *self, struct ActorGraphicsComponent *actor_graphics_component) {
-    self->actor_graphics_component = actor_graphics_component;
-}
-
 float actor_get_x(struct Actor *self) {
     return self->x;
 }
@@ -178,8 +184,6 @@ void actor_set_x(struct Actor *self, float value) {
     }
 
     self->x = value;
-
-    actor_graphics_component_set_position(self->actor_graphics_component, self->x, self->y);
 }
 
 float actor_get_y(struct Actor *self) {
@@ -194,8 +198,6 @@ void actor_set_y(struct Actor *self, float value) {
     }
 
     self->y = value;
-
-    actor_graphics_component_set_position(self->actor_graphics_component, self->x, self->y);
 }
 
 int actor_get_w(struct Actor *self) {
@@ -224,18 +226,112 @@ void actor_set_velocity(struct Actor *self, int value) {
 // END NAV_Actor
 
 
-// NAV_ActorManager
-struct ActorManager {
-    struct Actor *actors;
-};
+// NAV_Player
+void player_init(struct Player *self, float x, float y, int w, int h, int velocity) {
+    player_set_w(self, w);
+    player_set_h(self, h);
+    player_set_x(self, x);
+    player_set_y(self, y);
+    player_set_velocity(self, velocity);
+}
 
-void actor_manager_init(struct ActorManager *self, struct Actor *actors, struct ActorGraphicsComponent *actor_graphics_components) {
+float player_get_x(struct Player *self) {
+    return self->x;
+}
+
+void player_set_x(struct Player *self, float value) {
+    if (value < 0) {
+        value = 0;
+    } else if (value > WINDOW_W) {
+        value = WINDOW_W;
+    }
+
+    self->x = value;
+
+    self->rect.x = floor(self->x - (self->w / 2));
+}
+
+float player_get_y(struct Player *self) {
+    return self->y;
+}
+
+void player_set_y(struct Player *self, float value) {
+    if (value < 0) {
+        value = 0;
+    } else if (value > WINDOW_H) {
+        value = WINDOW_H;
+    }
+
+    self->y = value;
+
+    self->rect.y = floor(self->y - (self->h / 2));
+}
+
+int player_get_w(struct Player *self) {
+    return self->w;
+}
+
+void player_set_w(struct Player *self, int value) {
+    self->w = value;
+    self->rect.w = self->w;
+}
+
+int player_get_h(struct Player *self) {
+    return self->h;
+}
+
+void player_set_h(struct Player *self, int value) {
+    self->h = value;
+    self->rect.h = self->h;
+}
+
+int player_get_velocity(struct Player *self) {
+    return self->velocity;
+}
+
+void player_set_velocity(struct Player *self, int value) {
+    self->velocity = value;
+}
+
+void player_update(struct Player *self) {
+    float xxx_prev_x = 0.0;
+    float xxx_prev_y = 0.0;
+    float distance = 20.0; //TODO: Change me.
+
+    if (keys.right_pressed) {
+        xxx_prev_x = player_get_x(&player);
+        player_set_x(&player, xxx_prev_x + distance);
+    }
+
+    if (keys.left_pressed) {
+        xxx_prev_x = player_get_x(&player);
+        player_set_x(&player, xxx_prev_x - distance);
+    }
+
+    if (keys.up_pressed) {
+        xxx_prev_y = player_get_y(&player);
+        player_set_y(&player, xxx_prev_y - distance);
+    }
+
+    if (keys.down_pressed) {
+        xxx_prev_y = player_get_y(&player);
+        player_set_y(&player, xxx_prev_y + distance);
+    }
+}
+
+void player_render(struct Player *self, SDL_Renderer *renderer) {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, &self->rect);
+}
+// END NAV_Player
+
+
+// NAV_ActorManager
+void actor_manager_init(struct ActorManager *self, struct Actor *actors) {
     self->actors = actors;
 
     for (int i = 0; i < ACTOR_N; i++) {
         struct Actor *a = &self->actors[i];
-
-        a->actor_graphics_component = &actor_graphics_components[i];
 
         a->x = 0;
         a->y = 0;
@@ -256,29 +352,13 @@ double performance_counters_to_ms(Uint64 start, Uint64 end) {
 // END NAV_MiscFunctions
 
 
-struct Keys keys;
-struct InputComponent input_component;
-struct ActorGraphicsComponent actor_graphics_component_array[ACTOR_N];
-struct ActorGraphicsComponentManager actor_graphics_component_manager;
-struct Actor actor_array[ACTOR_N];
-struct ActorManager actor_manager;
-struct Game game;
-
-
 // NAV_Game
-struct Game {
-
-};
-
 void game_run(struct Game *self, SDL_Renderer *renderer) {
     int keep_running = 1;
 
-    float xxx_prev_x;
-    float xxx_prev_y;
-
     Uint64 previous = SDL_GetPerformanceCounter();
     double lag = 0.0;
-    double MS_PER_UPDATE = 16.00;
+    float MS_PER_UPDATE = 16.00;
 
     while (keep_running) {
         Uint64 current = SDL_GetPerformanceCounter();
@@ -296,28 +376,8 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             input_component_update(&input_component, &event);
         }
 
-        double distance = 20.00; //TODO: CHANGE ME
-
         while (lag >= MS_PER_UPDATE) {
-            if (keys.right_pressed) {
-                xxx_prev_x = actor_get_x(&actor_array[0]);
-                actor_set_x(&actor_array[0], xxx_prev_x + distance);
-            }
-
-            if (keys.left_pressed) {
-                xxx_prev_x = actor_get_x(&actor_array[0]);
-                actor_set_x(&actor_array[0], xxx_prev_x - distance);
-            }
-
-            if (keys.up_pressed) {
-                xxx_prev_y = actor_get_y(&actor_array[0]);
-                actor_set_y(&actor_array[0], xxx_prev_y - distance);
-            }
-
-            if (keys.down_pressed) {
-                xxx_prev_y = actor_get_y(&actor_array[0]);
-                actor_set_y(&actor_array[0], xxx_prev_y + distance);
-            }
+            player_update(&player);
 
             lag -= MS_PER_UPDATE;
 
@@ -334,7 +394,7 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             SDL_Log("ERROR: SDL_RenderClear() (%s)", SDL_GetError());
         }
 
-        actor_graphics_component_manager_update(&actor_graphics_component_manager, renderer);
+        player_render(&player, renderer);
 
         SDL_RenderPresent(renderer);
     }
@@ -396,8 +456,9 @@ int main(void) {
     SDL_Log("INFO: SDL_CreateRenderer()");
 
     input_component_set_keys(&input_component, &keys);
-    actor_graphics_component_manager_init(&actor_graphics_component_manager, actor_graphics_component_array);
-    actor_manager_init(&actor_manager, actor_array, actor_graphics_component_array);
+    actor_manager_init(&actor_manager, actor_array);
+
+    player_init(&player, 0, 0, 20, 40, 77);
 
     game_run(&game, renderer);
 
@@ -416,3 +477,5 @@ int main(void) {
     return 0;
 }
 // END NAV_Main
+
+// END NAV_Code

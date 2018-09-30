@@ -2,6 +2,9 @@
 #include <math.h>
 #include "SDL.h"
 
+#define UPDATES_PER_SECOND 120.0
+#define MS_PER_UPDATE 8.33
+#define SLEEP_MS 2.08
 #define WINDOW_W 480
 #define WINDOW_H 480
 
@@ -42,7 +45,7 @@ struct Actor {
     float y;
     int w;
     int h;
-    int velocity;
+    int v;
 };
 
 float actor_get_x(struct Actor *self);
@@ -53,8 +56,8 @@ int actor_get_w(struct Actor *self);
 void actor_set_w(struct Actor *self, int value);
 int actor_get_h(struct Actor *self);
 void actor_set_h(struct Actor *self, int value);
-int actor_get_velocity(struct Actor *self);
-void actor_set_velocity(struct Actor *self, int value);
+int actor_get_v(struct Actor *self);
+void actor_set_v(struct Actor *self, int value);
 // END NAV_Actor
 
 
@@ -64,11 +67,13 @@ struct Player {
     float y;
     int w;
     int h;
-    int velocity;
+    int v;
+    int vx;
+    int vy;
     SDL_Rect rect;
 };
 
-void player_init(struct Player *self, float x, float y, int w, int h, int velocity);
+void player_init(struct Player *self, float x, float y, int w, int h, int v);
 float player_get_x(struct Player *self);
 void player_set_x(struct Player *self, float value);
 float player_get_y(struct Player *self);
@@ -77,10 +82,14 @@ int player_get_w(struct Player *self);
 void player_set_w(struct Player *self, int value);
 int player_get_h(struct Player *self);
 void player_set_h(struct Player *self, int value);
-int player_get_velocity(struct Player *self);
-void player_set_velocity(struct Player *self, int value);
+int player_get_v(struct Player *self);
+void player_set_v(struct Player *self, int value);
+int player_get_vx(struct Player *self);
+void player_set_vx(struct Player *self, int value);
+int player_get_vy(struct Player *self);
+void player_set_vy(struct Player *self, int value);
 void player_update(struct Player *self);
-void player_render(struct Player *self, SDL_Renderer *renderer);
+void player_render(struct Player *self, SDL_Renderer *renderer, float foo);
 // END NAV_Player
 
 
@@ -139,6 +148,8 @@ void input_component_update(struct InputComponent *self, SDL_Event *event) {
             return;
         }
 
+        //SDL_Log("INFO: SDL_KEYDOWN");
+
         sym = event->key.keysym.sym;
 
         if (sym == SDLK_RIGHT) {
@@ -154,6 +165,8 @@ void input_component_update(struct InputComponent *self, SDL_Event *event) {
         if (event->key.repeat) {
             return;
         }
+
+        //SDL_Log("INFO: SDL_KEYUP");
 
         sym = event->key.keysym.sym;
 
@@ -216,23 +229,23 @@ void actor_set_h(struct Actor *self, int value) {
     self->h = value;
 }
 
-int actor_get_velocity(struct Actor *self) {
-    return self->velocity;
+int actor_get_v(struct Actor *self) {
+    return self->v;
 }
 
-void actor_set_velocity(struct Actor *self, int value) {
-    self->velocity = value;
+void actor_set_v(struct Actor *self, int value) {
+    self->v = value;
 }
 // END NAV_Actor
 
 
 // NAV_Player
-void player_init(struct Player *self, float x, float y, int w, int h, int velocity) {
+void player_init(struct Player *self, float x, float y, int w, int h, int v) {
     player_set_w(self, w);
     player_set_h(self, h);
     player_set_x(self, x);
     player_set_y(self, y);
-    player_set_velocity(self, velocity);
+    player_set_v(self, v);
 }
 
 float player_get_x(struct Player *self) {
@@ -285,42 +298,56 @@ void player_set_h(struct Player *self, int value) {
     self->rect.h = self->h;
 }
 
-int player_get_velocity(struct Player *self) {
-    return self->velocity;
+int player_get_v(struct Player *self) {
+    return self->v;
 }
 
-void player_set_velocity(struct Player *self, int value) {
-    self->velocity = value;
+void player_set_v(struct Player *self, int value) {
+    self->v = value;
+}
+
+int player_get_vx(struct Player *self) {
+    return self->vx;
+}
+
+void player_set_vx(struct Player *self, int value) {
+    self->vx = value;
+}
+
+int player_get_vy(struct Player *self) {
+    return self->vy;
+}
+
+void player_set_vy(struct Player *self, int value) {
+    self->vy = value;
 }
 
 void player_update(struct Player *self) {
-    float xxx_prev_x = 0.0;
-    float xxx_prev_y = 0.0;
-    float distance = 20.0; //TODO: Change me.
+    self->vx = 0;
+    self->vy = 0;
 
     if (keys.right_pressed) {
-        xxx_prev_x = player_get_x(&player);
-        player_set_x(&player, xxx_prev_x + distance);
+        self->vx += self->v;
     }
 
     if (keys.left_pressed) {
-        xxx_prev_x = player_get_x(&player);
-        player_set_x(&player, xxx_prev_x - distance);
+        self->vx -= self->v;
     }
 
     if (keys.up_pressed) {
-        xxx_prev_y = player_get_y(&player);
-        player_set_y(&player, xxx_prev_y - distance);
+        self->vy -= self->v;
     }
 
     if (keys.down_pressed) {
-        xxx_prev_y = player_get_y(&player);
-        player_set_y(&player, xxx_prev_y + distance);
+        self->vy += self->v;
     }
+
+    player_set_x(self, self->x + (1.0 * self->vx / UPDATES_PER_SECOND));
+    player_set_y(self, self->y + (1.0 * self->vy / UPDATES_PER_SECOND));
 }
 
-void player_render(struct Player *self, SDL_Renderer *renderer) {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+void player_render(struct Player *self, SDL_Renderer *renderer, float foo) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderFillRect(renderer, &self->rect);
 }
 // END NAV_Player
@@ -337,7 +364,7 @@ void actor_manager_init(struct ActorManager *self, struct Actor *actors) {
         a->y = 0;
         a->w = 20;
         a->h = 40;
-        a->velocity = 0;
+        a->v = 0;
     }
 }
 // END NAV_ActorManager
@@ -358,11 +385,13 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
 
     Uint64 previous = SDL_GetPerformanceCounter();
     double lag = 0.0;
-    float MS_PER_UPDATE = 16.00;
 
     while (keep_running) {
         Uint64 current = SDL_GetPerformanceCounter();
         double elapsed = performance_counters_to_ms(previous, current);
+
+        //SDL_Log("INFO: Frame time: %f ms.", elapsed);
+
         previous = current;
         lag += elapsed;
 
@@ -380,13 +409,11 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             player_update(&player);
 
             lag -= MS_PER_UPDATE;
-
-            // SDL_Delay(xxx_loop_tick_sleep_ms - xxx_loop_tick_no_delay_ms);
         }
 
         // RENDER
 
-        SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE); // grey
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // grey
 
         int tmp = SDL_RenderClear(renderer);
 
@@ -394,9 +421,11 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             SDL_Log("ERROR: SDL_RenderClear() (%s)", SDL_GetError());
         }
 
-        player_render(&player, renderer);
+        player_render(&player, renderer, lag / MS_PER_UPDATE);
 
         SDL_RenderPresent(renderer);
+
+        SDL_Delay(SLEEP_MS);
     }
 }
 // END NAV_Game
@@ -438,6 +467,7 @@ int main(void) {
         window,
         -1,
         //SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+        //SDL_RENDERER_ACCELERATED
         SDL_RENDERER_ACCELERATED
     );
 
@@ -458,7 +488,7 @@ int main(void) {
     input_component_set_keys(&input_component, &keys);
     actor_manager_init(&actor_manager, actor_array);
 
-    player_init(&player, 0, 0, 20, 40, 77);
+    player_init(&player, 0, 0, 20, 20, 256);
 
     game_run(&game, renderer);
 

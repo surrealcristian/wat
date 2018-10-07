@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 #include "SDL.h"
 
 
@@ -436,7 +437,6 @@ void tinymt32_init_by_array(tinymt32_t * random, uint32_t init_key[],
 	tinymt32_next_state(random);
     }
 }
-
 // END NAV_TinyMT
 
 // END NAV_Libs
@@ -473,6 +473,7 @@ struct Player {
     int v;
     int vx;
     int vy;
+    int alive;
     int bullets_n;
     int firing;
     int fire_spacing;
@@ -563,8 +564,26 @@ void bullet_manager_render(struct BulletManager *self, SDL_Renderer *renderer);
 // END NAV_BulletManager
 
 
+// NAV_CollisionManager
+struct CollisionManager {
+    struct Player *player;
+    struct Bullet *player_bullets;
+    int bullets_n;
+    struct Enemy *enemies;
+    int enemies_n;
+};
+void collision_manager_init(struct CollisionManager *self, struct Player *player, struct Bullet *player_bullets, int bullets_n, struct Enemy *enemies, int enemies_n);
+void collision_manager_player_vs_enemies(struct CollisionManager *self);
+void collision_manager_enemies_vs_player_bullets(struct CollisionManager *self);
+void collision_manager_update(struct CollisionManager *self);
+// END NAV_CollisionManager
+
+
 // NAV_MiscFunctions
 double performance_counters_to_ms(Uint64 start, Uint64 end);
+
+void rand_init(uint32_t seed);
+int rand_n(int n);
 
 #define randN(N) ((int)(nextRand()>>5)%(N))
 #define randNS(N) (((int)(nextRand()>>5))%(N<<1)-N)
@@ -590,6 +609,7 @@ int main(void);
 
 
 // NAV_GlobalVariables
+tinymt32_t TINYMT_STATE;
 struct Keys KEYS;
 struct InputComponent INPUT_COMPONENT;
 struct Player PLAYER;
@@ -597,8 +617,8 @@ struct Bullet PLAYER_BULLETS[PLAYER_BULLETS_MAX];
 struct BulletManager PLAYER_BULLET_MANAGER;
 struct Enemy ENEMIES[ENEMIES_MAX];
 struct EnemyManager ENEMY_MANAGER;
+struct CollisionManager COLLISION_MANAGER;
 struct Game GAME;
-
 // END NAV_GlobalVariables
 
 
@@ -667,6 +687,8 @@ void player_init(struct Player *self, struct BulletManager *bullet_manager, floa
     player_set_y(self, y);
 
     self->v = v;
+
+    self->alive = 1;
 
     self->bullets_n = PLAYER_BULLETS_INIT_N;
 
@@ -864,7 +886,7 @@ void enemy_manager_spawn(struct EnemyManager *self) {
 
     enemy->alive = 1;
 
-    enemy_set_x(enemy, 50);
+    enemy_set_x(enemy, rand_n(WINDOW_W + 1));
     enemy_set_y(enemy, 0 - enemy->h);
 
     enemy->vx = ENEMY_VX;
@@ -1012,11 +1034,75 @@ void bullet_manager_render(struct BulletManager *self, SDL_Renderer *renderer) {
 // END NAV_BulletManager
 
 
+// NAV_CollisionManager
+void collision_manager_init(struct CollisionManager *self, struct Player *player, struct Bullet *player_bullets, int bullets_n, struct Enemy *enemies, int enemies_n) {
+    self->player = player;
+    self->player_bullets = player_bullets;
+    self->bullets_n = bullets_n;
+    self->enemies = enemies;
+    self->enemies_n = enemies_n;
+}
+
+void collision_manager_player_vs_enemies(struct CollisionManager *self) {
+    if (self->player->alive == 0) {
+        return;
+    }
+
+    for (int i = 0; i < ENEMIES_MAX; i++) {
+        if (self->enemies->alive == 0) {
+            continue;
+        }
+
+        if (SDL_HasIntersection(&self->player->rect, &self->enemies[i].rect) == SDL_TRUE) {
+            self->enemies[i].alive = 0;
+            continue;
+        }
+    }
+}
+
+void collision_manager_enemies_vs_player_bullets(struct CollisionManager *self) {
+    for (int i = 0; i < ENEMIES_MAX; i++) {
+        if (self->enemies[i].alive == 0) {
+            continue;
+        }
+
+        for (int j = 0; j < PLAYER_BULLETS_MAX; j++) {
+            if (self->player_bullets[j].alive == 0) {
+                continue;
+            }
+
+            if (SDL_HasIntersection(&self->enemies[i].rect, &self->player_bullets[j].rect) == SDL_TRUE) {
+                self->enemies[i].alive = 0;
+                self->player_bullets[j].alive = 0;
+                break;
+            }
+        }
+    }
+}
+
+void collision_manager_update(struct CollisionManager *self) {
+    collision_manager_player_vs_enemies(self);
+    collision_manager_enemies_vs_player_bullets(self);
+}
+// END NAV_CollisionManager
+
+
 // NAV_MiscFunctions
 double performance_counters_to_ms(Uint64 start, Uint64 end) {
     double ms = (double)((end - start) * 1000) / SDL_GetPerformanceFrequency();
 
     return ms;
+}
+
+void rand_init(uint32_t seed) {
+    tinymt32_init(&TINYMT_STATE, seed);
+}
+
+int rand_n(int n) {
+    uint32_t rn = tinymt32_generate_uint32(&TINYMT_STATE);
+    int ret = (int)(rn >> 5) % n;
+
+    return ret;
 }
 // END NAV_MiscFunctions
 
@@ -1053,6 +1139,8 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             bullet_manager_update(&PLAYER_BULLET_MANAGER);
 
             enemy_manager_update(&ENEMY_MANAGER);
+
+            collision_manager_update(&COLLISION_MANAGER);
 
             lag -= MS_PER_UPDATE;
         }
@@ -1129,10 +1217,11 @@ int main(void) {
 
     SDL_Log("INFO: SDL_CreateRenderer()");
 
+    rand_init(time(NULL));
     bullet_manager_init(&PLAYER_BULLET_MANAGER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, 0, 0, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
     player_init(&PLAYER, &PLAYER_BULLET_MANAGER, WINDOW_W / 2, WINDOW_H / 2, PLAYER_W, PLAYER_H, PLAYER_V);
-
     enemy_manager_init(&ENEMY_MANAGER, ENEMIES, ENEMIES_MAX, 0, 0, ENEMY_W, ENEMY_H, ENEMY_V);
+    collision_manager_init(&COLLISION_MANAGER, &PLAYER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, ENEMIES, ENEMIES_MAX);
 
     game_run(&GAME, renderer);
 

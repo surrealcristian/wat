@@ -12,6 +12,9 @@
 #define MS_PER_UPDATE 8.33 // 1000 / 120.0
 #define SLEEP_MS 2.08 // 1000 / 480.0
 
+#define STATE_IN_GAME 0
+#define STATE_PAUSE 1
+
 #define PLAYER_W 16
 #define PLAYER_H 16
 #define PLAYER_V 512
@@ -38,11 +41,88 @@
 
 #define EXPLOSION_PARTICLES_N 4
 
-float PLAYER_BULLETS_OFFSET_X[] = { +0.00, -0.75, +0.75, -1.50, +1.50 };
-float PLAYER_BULLETS_OFFSET_Y[] = { -1.00, -0.50, -0.50, +0.00, +0.00 };
+float PLAYER_BULLETS_OFFSET_X[5] = { +0.00, -0.75, +0.75, -1.50, +1.50 };
+float PLAYER_BULLETS_OFFSET_Y[5] = { -1.00, -0.50, -0.50, +0.00, +0.00 };
 
-float EXPLOSION_PARTICLES_VX[] = { -1.00, +1.00, -1.00, +1.00 };
-float EXPLOSION_PARTICLES_VY[] = { -1.00, -1.00, +1.00, +1.00 };
+float EXPLOSION_PARTICLES_VX[4] = { -1.00, +1.00, -1.00, +1.00 };
+float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
+
+float CHARACTERS_DATA_POSITION_X[20] = {
+    0, 10, 20, 30,
+    0, 10, 20, 30,
+    0, 10, 20, 30,
+    0, 10, 20, 30,
+    0, 10, 20, 30,
+};
+float CHARACTERS_DATA_POSITION_Y[20] = {
+    0 , 0 , 0 , 0 ,
+    10, 10, 10, 10,
+    20, 20, 20, 20,
+    30, 30, 30, 30,
+    40, 40, 40, 40,
+};
+int CHARACTERS_DATA[10][20] = {
+    // 0
+    { 1, 1, 1, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 1, 1, 1, },
+    // 1
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1, },
+    // 2
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+    // 3
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+    // 4
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+    // 5
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+    // 6
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+    // 7
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+    // 8
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+    // 9
+    { 1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1 },
+};
 // END NAV_Config
 
 
@@ -53,6 +133,8 @@ float EXPLOSION_PARTICLES_VY[] = { -1.00, -1.00, +1.00, +1.00 };
 // http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
 // http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/VERSIONS/C-LANG/c-lang.html
 // http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/TINYMT/index.html
+
+// version 1.1.1
 
 #ifndef TINYMT32_H
 #define TINYMT32_H
@@ -455,6 +537,15 @@ void tinymt32_init_by_array(tinymt32_t * random, uint32_t init_key[],
 
 // NAV_Declarations
 
+// NAV_Text
+struct Text {
+    SDL_Rect rect;
+};
+
+void text_init(struct Text *text);
+void text_print_character(struct Text *text, float x, float y);
+// END NAV_Text
+
 // NAV_Keys
 struct Keys {
     int left;
@@ -466,16 +557,9 @@ struct Keys {
 // END NAV_Keys
 
 
-// NAV_InputComponent
-struct InputComponent {
-};
-
-void input_component_update(struct InputComponent *self, SDL_Event *event);
-// END NAV_InputComponent
-
-
 // NAV_Player
 struct Player {
+    struct Keys *keys;
     struct BulletManager *bullet_manager;
     float x;
     float y;
@@ -492,7 +576,7 @@ struct Player {
     SDL_Rect rect;
 };
 
-void player_init(struct Player *self, struct BulletManager *bullet_manager, float x, float y, int w, int h, int v);
+void player_init(struct Player *self, struct Keys *keys, struct BulletManager *bullet_manager, float x, float y, int w, int h, int v);
 void player_set_x(struct Player *self, float value);
 void player_set_y(struct Player *self, float value);
 void player_on_button_a_keydown(struct Player *self);
@@ -635,13 +719,74 @@ int rand_n(int n);
 // END NAV_MiscFunctions
 
 
-// NAV_Game
-struct Game {
-
+// NAV_InGameState
+struct InGameState {
+    struct Keys *keys;
+    struct Player *player;
+    struct Bullet *player_bullets;
+    struct BulletManager *player_bullet_manager;
+    struct Enemy *enemies;
+    struct EnemyManager *enemy_manager;
+    struct Particle *particles;
+    struct ParticleManager *particle_manager;
+    struct CollisionManager *collision_manager;
 };
 
+void in_game_state_init(
+    struct InGameState *self,
+    struct Keys *keys,
+    struct Player *player,
+    struct Bullet *player_bullets,
+    struct BulletManager *player_bullet_manager,
+    struct Enemy *enemies,
+    struct EnemyManager *enemy_manager,
+    struct Particle *particles,
+    struct ParticleManager *particle_manager,
+    struct CollisionManager *collision_manager
+);
+
+void in_game_state_update(struct InGameState *self);
+void in_game_state_render(struct InGameState *self, SDL_Renderer *renderer);
+// END NAV_InGameState
+
+
+// NAV_PauseState
+struct PauseState {
+};
+
+void pause_state_update(struct PauseState *pause_state);
+void pause_state_render(struct PauseState *pause_state, SDL_Renderer *renderer);
+// END NAV_PauseState
+
+
+// NAV_Game
+struct Game {
+    struct InputComponent *input_component;
+    struct InGameState *in_game_state;
+    int state;
+};
+
+void game_init(struct Game *self, struct InGameState *in_game_state);
+void game_set_input_component(struct Game *self, struct InputComponent *input_component);
 void game_run(struct Game *self, SDL_Renderer *renderer);
 // END NAV_Game
+
+
+// NAV_InputComponent
+struct InputComponent {
+    struct Keys *keys;
+    struct Game *game;
+    struct Player *player;
+};
+
+void input_component_init(
+    struct InputComponent *self,
+    struct Keys *keys,
+    struct Game *game,
+    struct Player *player
+);
+void input_component_update(struct InputComponent *self, SDL_Event *event);
+// END NAV_InputComponent
 
 
 // NAV_Main
@@ -653,6 +798,7 @@ int main(void);
 
 // NAV_GlobalVariables
 tinymt32_t TINYMT_STATE;
+struct Text TEXT;
 struct Keys KEYS;
 struct InputComponent INPUT_COMPONENT;
 struct Player PLAYER;
@@ -663,63 +809,37 @@ struct EnemyManager ENEMY_MANAGER;
 struct Particle PARTICLES[PARTICLES_MAX];
 struct ParticleManager PARTICLE_MANAGER;
 struct CollisionManager COLLISION_MANAGER;
+struct InGameState IN_GAME_STATE;
 struct Game GAME;
 // END NAV_GlobalVariables
 
 
 // NAV_Code
 
-// NAV_InputComponent
-void input_component_update(struct InputComponent *self, SDL_Event *event) {
-    int sym;
+// NAV_Text
+void text_init(struct Text *self) {
+    self->rect.w = 8;
+    self->rect.h = 8;
+}
 
-    if (event->type == SDL_KEYDOWN) {
-        if (event->key.repeat) {
-            return;
+void text_render_character(struct Text *self, SDL_Renderer *renderer, int character, float x, float y) {
+    for (int i = 0; i < 20; i++) {
+        if (CHARACTERS_DATA[i] == 0) {
+            continue;
         }
 
-        sym = event->key.keysym.sym;
+        self->rect.x = x + CHARACTERS_DATA_POSITION_X[i];
+        self->rect.y = y + CHARACTERS_DATA_POSITION_Y[i];
 
-        if (sym == SDLK_RIGHT) {
-            KEYS.right = 1;
-        } else if (sym == SDLK_LEFT) {
-            KEYS.left = 1;
-        } else if (sym == SDLK_UP) {
-            KEYS.up = 1;
-        } else if (sym == SDLK_DOWN) {
-            KEYS.down = 1;
-        } else if (sym == SDLK_z) {
-            KEYS.z = 1;
-
-            player_on_button_a_keydown(&PLAYER);
-        }
-    } else if (event->type == SDL_KEYUP) {
-        if (event->key.repeat) {
-            return;
-        }
-
-        sym = event->key.keysym.sym;
-
-        if (sym == SDLK_RIGHT) {
-            KEYS.right = 0;
-        } else if (sym == SDLK_LEFT) {
-            KEYS.left = 0;
-        } else if (sym == SDLK_UP) {
-            KEYS.up = 0;
-        } else if (sym == SDLK_DOWN) {
-            KEYS.down = 0;
-        } else if (sym == SDLK_z) {
-            KEYS.z = 0;
-
-            player_on_button_a_keyup(&PLAYER);
-        }
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_RenderFillRect(renderer, &self->rect);
     }
 }
-// END NAV_InputComponent
-
+// END NAV_Text
 
 // NAV_Player
-void player_init(struct Player *self, struct BulletManager *bullet_manager, float x, float y, int w, int h, int v) {
+void player_init(struct Player *self, struct Keys *keys, struct BulletManager *bullet_manager, float x, float y, int w, int h, int v) {
+    self->keys = keys;
     self->bullet_manager = bullet_manager;
 
     self->w = w;
@@ -802,26 +922,26 @@ void player_update(struct Player *self) {
     self->vx = 0;
     self->vy = 0;
 
-    if (KEYS.right) {
+    if (self->keys->right) {
         self->vx = +1;
     }
 
-    if (KEYS.left) {
+    if (self->keys->left) {
         self->vx = -1;
     }
 
-    if (KEYS.up) {
+    if (self->keys->up) {
         self->vy = -1;
     }
 
-    if (KEYS.down) {
+    if (self->keys->down) {
         self->vy = +1;
     }
 
     player_set_x(self, self->x + (1.0 * self->v * self->vx / UPDATES_PER_SECOND));
     player_set_y(self, self->y + (1.0 * self->v * self->vy / UPDATES_PER_SECOND));
 
-    if (KEYS.z) {
+    if (self->keys->z) {
         self->fire_time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
     }
 
@@ -1273,7 +1393,69 @@ int rand_n(int n) {
 // END NAV_MiscFunctions
 
 
+// NAV_InGameState
+void in_game_state_init(
+    struct InGameState *self,
+    struct Keys *keys,
+    struct Player *player,
+    struct Bullet *player_bullets,
+    struct BulletManager *player_bullet_manager,
+    struct Enemy *enemies,
+    struct EnemyManager *enemy_manager,
+    struct Particle *particles,
+    struct ParticleManager *particle_manager,
+    struct CollisionManager *collision_manager
+) {
+    self->keys = keys;
+    self->player = player;
+    self->player_bullets = player_bullets;
+    self->player_bullet_manager = player_bullet_manager;
+    self->enemies = enemies;
+    self->enemy_manager = enemy_manager;
+    self->particles = particles;
+    self->particle_manager = particle_manager;
+    self->collision_manager = collision_manager;
+}
+
+void in_game_state_update(struct InGameState *self) {
+    player_update(self->player);
+    bullet_manager_update(self->player_bullet_manager);
+    enemy_manager_update(self->enemy_manager);
+    particle_manager_update(self->particle_manager);
+    collision_manager_update(self->collision_manager);
+}
+
+void in_game_state_render(struct InGameState *self, SDL_Renderer *renderer) {
+    particle_manager_render(self->particle_manager, renderer);
+    bullet_manager_render(self->player_bullet_manager, renderer);
+    enemy_manager_render(self->enemy_manager, renderer);
+    player_render(self->player, renderer);
+}
+// END NAV_InGameState
+
+
+// NAV_PauseState
+void pause_state_update(struct PauseState *pause_state) {
+
+}
+
+void pause_state_render(struct PauseState *pause_state, SDL_Renderer *renderer) {
+
+}
+// END NAV_PauseState
+
+
 // NAV_Game
+void game_init(struct Game *self, struct InGameState *in_game_state) {
+    self->in_game_state = in_game_state;
+
+    self->state = STATE_IN_GAME;
+}
+
+void game_set_input_component(struct Game *self, struct InputComponent *input_component) {
+    self->input_component = input_component;
+}
+
 void game_run(struct Game *self, SDL_Renderer *renderer) {
     int keep_running = 1;
 
@@ -1296,15 +1478,15 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
                 keep_running = 0;
             }
 
-            input_component_update(&INPUT_COMPONENT, &event);
+            input_component_update(self->input_component, &event);
         }
 
         while (lag >= MS_PER_UPDATE) {
-            player_update(&PLAYER);
-            bullet_manager_update(&PLAYER_BULLET_MANAGER);
-            enemy_manager_update(&ENEMY_MANAGER);
-            particle_manager_update(&PARTICLE_MANAGER);
-            collision_manager_update(&COLLISION_MANAGER);
+            if (self->state == STATE_IN_GAME) {
+                in_game_state_update(self->in_game_state);
+            } else if (self->state == STATE_PAUSE) {
+                //TODO: complete
+            }
 
             lag -= MS_PER_UPDATE;
         }
@@ -1314,10 +1496,13 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // grey
         SDL_RenderClear(renderer);
 
-        particle_manager_render(&PARTICLE_MANAGER, renderer);
-        bullet_manager_render(&PLAYER_BULLET_MANAGER, renderer);
-        enemy_manager_render(&ENEMY_MANAGER, renderer);
-        player_render(&PLAYER, renderer);
+        if (self->state == STATE_IN_GAME) {
+            in_game_state_render(self->in_game_state, renderer);
+        } else if (self->state == STATE_PAUSE) {
+            //TODO: complete
+        }
+
+        text_render_character(&TEXT, renderer, 0, 50, 50);
 
         SDL_RenderPresent(renderer);
 
@@ -1325,6 +1510,72 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
     }
 }
 // END NAV_Game
+
+
+// NAV_InputComponent
+void input_component_init(
+    struct InputComponent *self,
+    struct Keys *keys,
+    struct Game *game,
+    struct Player *player
+) {
+    self->keys = keys;
+    self->game = game;
+    self->player = player;
+}
+
+void input_component_update(struct InputComponent *self, SDL_Event *event) {
+    int sym;
+
+    if (event->type == SDL_KEYDOWN) {
+        if (event->key.repeat) {
+            return;
+        }
+
+        sym = event->key.keysym.sym;
+
+        if (sym == SDLK_RIGHT) {
+            self->keys->right = 1;
+        } else if (sym == SDLK_LEFT) {
+            self->keys->left = 1;
+        } else if (sym == SDLK_UP) {
+            self->keys->up = 1;
+        } else if (sym == SDLK_DOWN) {
+            self->keys->down = 1;
+        } else if (sym == SDLK_z) {
+            self->keys->z = 1;
+
+            player_on_button_a_keydown(self->player);
+        }
+    } else if (event->type == SDL_KEYUP) {
+        if (event->key.repeat) {
+            return;
+        }
+
+        sym = event->key.keysym.sym;
+
+        if (sym == SDLK_RIGHT) {
+            self->keys->right = 0;
+        } else if (sym == SDLK_LEFT) {
+            self->keys->left = 0;
+        } else if (sym == SDLK_UP) {
+            self->keys->up = 0;
+        } else if (sym == SDLK_DOWN) {
+            self->keys->down = 0;
+        } else if (sym == SDLK_z) {
+            self->keys->z = 0;
+
+            player_on_button_a_keyup(self->player);
+        } else if (sym == SDLK_ESCAPE) {
+            if (self->game->state == STATE_IN_GAME) {
+                self->game->state = STATE_PAUSE;
+            } else if (self->game->state == STATE_PAUSE) {
+                self->game->state = STATE_IN_GAME;
+            }
+        }
+    }
+}
+// END NAV_InputComponent
 
 
 // NAV_Main
@@ -1359,11 +1610,31 @@ int main(void) {
     }
 
     rand_init(time(NULL));
+    text_init(&TEXT);
     bullet_manager_init(&PLAYER_BULLET_MANAGER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
-    player_init(&PLAYER, &PLAYER_BULLET_MANAGER, WINDOW_W / 2, WINDOW_H / 2, PLAYER_W, PLAYER_H, PLAYER_V);
+    player_init(&PLAYER, &KEYS, &PLAYER_BULLET_MANAGER, WINDOW_W / 2, WINDOW_H / 2, PLAYER_W, PLAYER_H, PLAYER_V);
     enemy_manager_init(&ENEMY_MANAGER, ENEMIES, ENEMIES_MAX, ENEMY_W, ENEMY_H, ENEMY_V);
     particle_manager_init(&PARTICLE_MANAGER, PARTICLES, PARTICLES_MAX, PARTICLE_W, PARTICLE_H, PARTICLE_V);
     collision_manager_init(&COLLISION_MANAGER, &PARTICLE_MANAGER, &PLAYER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, ENEMIES, ENEMIES_MAX);
+
+    in_game_state_init(
+        &IN_GAME_STATE,
+        &KEYS,
+        &PLAYER,
+        PLAYER_BULLETS,
+        &PLAYER_BULLET_MANAGER,
+        ENEMIES,
+        &ENEMY_MANAGER,
+        PARTICLES,
+        &PARTICLE_MANAGER,
+        &COLLISION_MANAGER
+    );
+
+    game_init(&GAME, &IN_GAME_STATE);
+
+    input_component_init(&INPUT_COMPONENT, &KEYS, &GAME, &PLAYER);
+
+    game_set_input_component(&GAME, &INPUT_COMPONENT);
 
     game_run(&GAME, renderer);
 

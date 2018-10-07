@@ -5,8 +5,8 @@
 
 
 // NAV_Config
-#define WINDOW_W 256
-#define WINDOW_H 512
+#define WINDOW_W 480
+#define WINDOW_H 640
 
 #define UPDATES_PER_SECOND 120.0
 #define MS_PER_UPDATE 8.33 // 1000 / 120.0
@@ -15,23 +15,34 @@
 #define PLAYER_W 16
 #define PLAYER_H 16
 #define PLAYER_V 512
+
 #define PLAYER_BULLETS_MAX 128
 #define PLAYER_BULLETS_INIT_N 5
-#define PLAYER_BULLETS_W 8
-#define PLAYER_BULLETS_H 8
+#define PLAYER_BULLETS_W 4
+#define PLAYER_BULLETS_H 4
 #define PLAYER_BULLETS_V 2048
 #define PLAYER_BULLETS_VX +0
 #define PLAYER_BULLETS_VY -1
 
+#define ENEMIES_MAX 16
 #define ENEMY_W 32
 #define ENEMY_H 32
 #define ENEMY_V 128
-#define ENEMIES_MAX 16
 #define ENEMY_VX +0
 #define ENEMY_VY +1
 
-float PLAYER_BULLETS_OFFSET_X[] = { +0.0, -0.75, +0.75, -1.50, +1.50 };
-float PLAYER_BULLETS_OFFSET_Y[] = { -1.0, -0.50, -0.50, +0.00, +0.00 };
+#define PARTICLES_MAX 128
+#define PARTICLE_W 8
+#define PARTICLE_H 8
+#define PARTICLE_V 1024
+
+#define EXPLOSION_PARTICLES_N 4
+
+float PLAYER_BULLETS_OFFSET_X[] = { +0.00, -0.75, +0.75, -1.50, +1.50 };
+float PLAYER_BULLETS_OFFSET_Y[] = { -1.00, -0.50, -0.50, +0.00, +0.00 };
+
+float EXPLOSION_PARTICLES_VX[] = { -1.00, +1.00, -1.00, +1.00 };
+float EXPLOSION_PARTICLES_VY[] = { -1.00, -1.00, +1.00, +1.00 };
 // END NAV_Config
 
 
@@ -521,7 +532,7 @@ struct EnemyManager {
     float spacing;
 };
 
-void enemy_manager_init(struct EnemyManager *self, struct Enemy *enemies, int n, float x, float y, int w, int h, int v);
+void enemy_manager_init(struct EnemyManager *self, struct Enemy *enemies, int n, int w, int h, int v);
 struct Enemy *enemy_manager_get_free(struct EnemyManager *self);
 void enemy_manager_spawn(struct EnemyManager *self);
 void enemy_manager_update(struct EnemyManager *self);
@@ -557,24 +568,61 @@ struct BulletManager {
     int n;
 };
 
-void bullet_manager_init(struct BulletManager *self, struct Bullet *bullets, int n, float x, float y, int w, int h, int v);
+void bullet_manager_init(struct BulletManager *self, struct Bullet *bullets, int n, int w, int h, int v);
 struct Bullet *bullet_manager_get_free(struct BulletManager *self);
 void bullet_manager_update(struct BulletManager *self);
 void bullet_manager_render(struct BulletManager *self, SDL_Renderer *renderer);
 // END NAV_BulletManager
 
 
+// NAV_Particle
+struct Particle {
+    float x;
+    float y;
+    int w;
+    int h;
+    int v;
+    int vx;
+    int vy;
+    int alive;
+    SDL_Rect rect;
+};
+
+void particle_init(struct Particle *self, float x, float y, int w, int h, int v);
+void particle_set_x(struct Particle *self, float value);
+void particle_set_y(struct Particle *self, float value);
+void particle_update(struct Particle *self);
+void particle_render(struct Particle *self, SDL_Renderer *renderer);
+// END NAV_Particle
+
+
+// NAV_ParticleManager
+struct ParticleManager {
+    struct Particle *particles;
+    int n;
+};
+
+void particle_manager_init(struct ParticleManager *self, struct Particle *particles, int n, int w, int h, int v);
+struct Particle *particle_manager_get_free(struct ParticleManager *self);
+void particle_manager_update(struct ParticleManager *self);
+void particle_manager_render(struct ParticleManager *self, SDL_Renderer *renderer);
+// END NAV_ParticleManager
+
+
 // NAV_CollisionManager
 struct CollisionManager {
+    struct ParticleManager *particle_manager;
     struct Player *player;
     struct Bullet *player_bullets;
     int bullets_n;
     struct Enemy *enemies;
     int enemies_n;
 };
-void collision_manager_init(struct CollisionManager *self, struct Player *player, struct Bullet *player_bullets, int bullets_n, struct Enemy *enemies, int enemies_n);
+
+void collision_manager_init(struct CollisionManager *self, struct ParticleManager *particle_manager, struct Player *player, struct Bullet *player_bullets, int bullets_n, struct Enemy *enemies, int enemies_n);
 void collision_manager_player_vs_enemies(struct CollisionManager *self);
 void collision_manager_enemies_vs_player_bullets(struct CollisionManager *self);
+void collision_manager_make_explosion(struct CollisionManager *self, float x, float y);
 void collision_manager_update(struct CollisionManager *self);
 // END NAV_CollisionManager
 
@@ -584,11 +632,6 @@ double performance_counters_to_ms(Uint64 start, Uint64 end);
 
 void rand_init(uint32_t seed);
 int rand_n(int n);
-
-#define randN(N) ((int)(nextRand()>>5)%(N))
-#define randNS(N) (((int)(nextRand()>>5))%(N<<1)-N)
-#define randNS2(N) ((((int)(nextRand()>>5))%(N)-(N>>1)) + (((int)(nextRand()>>5))%(N)-(N>>1)))
-#define absN(a) ((a) < 0 ? - (a) : (a))
 // END NAV_MiscFunctions
 
 
@@ -617,6 +660,8 @@ struct Bullet PLAYER_BULLETS[PLAYER_BULLETS_MAX];
 struct BulletManager PLAYER_BULLET_MANAGER;
 struct Enemy ENEMIES[ENEMIES_MAX];
 struct EnemyManager ENEMY_MANAGER;
+struct Particle PARTICLES[PARTICLES_MAX];
+struct ParticleManager PARTICLE_MANAGER;
 struct CollisionManager COLLISION_MANAGER;
 struct Game GAME;
 // END NAV_GlobalVariables
@@ -849,7 +894,7 @@ void enemy_render(struct Enemy *self, SDL_Renderer *renderer) {
 
 
 // NAV_EnemyManager
-void enemy_manager_init(struct EnemyManager *self, struct Enemy *enemies, int n, float x, float y, int w, int h, int v) {
+void enemy_manager_init(struct EnemyManager *self, struct Enemy *enemies, int n, int w, int h, int v) {
     self->enemies = enemies;
     self->n = n;
 
@@ -857,7 +902,7 @@ void enemy_manager_init(struct EnemyManager *self, struct Enemy *enemies, int n,
     self->spacing = 1000.0;
 
     for (int i = 0; i < self->n; i++) {
-        enemy_init(&self->enemies[i], x, y, w, h, v);
+        enemy_init(&self->enemies[i], 0, 0, w, h, v);
     }
 }
 
@@ -895,7 +940,7 @@ void enemy_manager_spawn(struct EnemyManager *self) {
 
 void enemy_manager_update(struct EnemyManager *self) {
     for (int i = 0; i < self->n; i++) {
-        if (!self->enemies[i].alive) {
+        if (self->enemies[i].alive == 0) {
             continue;
         }
 
@@ -912,7 +957,7 @@ void enemy_manager_update(struct EnemyManager *self) {
 
 void enemy_manager_render(struct EnemyManager *self, SDL_Renderer *renderer) {
     for (int i = 0; i < self->n; i++) {
-        if (!self->enemies[i].alive) {
+        if (self->enemies[i].alive == 0) {
             continue;
         }
 
@@ -987,7 +1032,7 @@ void bullet_render(struct Bullet *self, SDL_Renderer *renderer) {
 
 
 // NAV_BulletManager
-void bullet_manager_init(struct BulletManager *self, struct Bullet *bullets, int n, float x, float y, int w, int h, int v) {
+void bullet_manager_init(struct BulletManager *self, struct Bullet *bullets, int n, int w, int h, int v) {
     self->bullets = bullets;
     self->n = n;
 
@@ -1014,7 +1059,7 @@ struct Bullet *bullet_manager_get_free(struct BulletManager *self) {
 
 void bullet_manager_update(struct BulletManager *self) {
     for (int i = 0; i < self->n; i++) {
-        if (!self->bullets[i].alive) {
+        if (self->bullets[i].alive == 0) {
             continue;
         }
 
@@ -1024,7 +1069,7 @@ void bullet_manager_update(struct BulletManager *self) {
 
 void bullet_manager_render(struct BulletManager *self, SDL_Renderer *renderer) {
     for (int i = 0; i < self->n; i++) {
-        if (!self->bullets[i].alive) {
+        if (self->bullets[i].alive == 0) {
             continue;
         }
 
@@ -1034,8 +1079,113 @@ void bullet_manager_render(struct BulletManager *self, SDL_Renderer *renderer) {
 // END NAV_BulletManager
 
 
+// NAV_Particle
+void particle_init(struct Particle *self, float x, float y, int w, int h, int v) {
+    self->w = w;
+    self->rect.w = self->w;
+
+    self->h = h;
+    self->rect.h = self->h;
+
+    particle_set_x(self, x);
+    particle_set_y(self, y);
+
+    self->v = v;
+
+    self->alive = 0;
+}
+
+void particle_set_x(struct Particle *self, float value) {
+    float x_min = 0 - self->w + 1;
+    float x_max = WINDOW_W + self->w + 1;
+
+    if (value < x_min || value > x_max) {
+        self->alive = 0;
+        return;
+    }
+
+    self->x = value;
+
+    self->rect.x = floor(self->x - (self->w / 2));
+}
+
+void particle_set_y(struct Particle *self, float value) {
+    float y_min = 0 - self->h - 1;
+    float y_max = WINDOW_H + self->h + 1;
+
+    if (value < y_min || value > y_max) {
+        self->alive = 0;
+        return;
+    }
+
+    self->y = value;
+
+    self->rect.y = floor(self->y - (self->h / 2));
+}
+
+void particle_update(struct Particle *self) {
+    particle_set_x(self, self->x + (1.0 * self->v * self->vx / UPDATES_PER_SECOND));
+    particle_set_y(self, self->y + (1.0 * self->v * self->vy / UPDATES_PER_SECOND));
+}
+
+void particle_render(struct Particle *self, SDL_Renderer *renderer) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderFillRect(renderer, &self->rect);
+}
+// END NAV_Particle
+
+
+// NAV_ParticleManager
+void particle_manager_init(struct ParticleManager *self, struct Particle *particles, int n, int w, int h, int v) {
+    self->particles = particles;
+    self->n = n;
+
+    for (int i = 0; i < self->n; i++) {
+        particle_init(&self->particles[i], 0, 0, w, h, v);
+    }
+}
+
+struct Particle *particle_manager_get_free(struct ParticleManager *self) {
+    struct Particle *particle = NULL;
+
+    for (int i = 0; i < self->n; i++) {
+        if (self->particles[i].alive == 1) {
+            continue;
+        }
+
+        particle = &self->particles[i];
+
+        break;
+    }
+
+    return particle;
+}
+
+void particle_manager_update(struct ParticleManager *self) {
+    for (int i = 0; i < self->n; i++) {
+        if (self->particles[i].alive == 0) {
+            continue;
+        }
+
+        particle_update(&self->particles[i]);
+    }
+}
+
+void particle_manager_render(struct ParticleManager *self, SDL_Renderer *renderer) {
+    for (int i = 0; i < self->n; i++) {
+        if (self->particles[i].alive == 0) {
+            continue;
+        }
+
+        particle_render(&self->particles[i], renderer);
+    }
+}
+// END NAV_ParticleManager
+
+
 // NAV_CollisionManager
-void collision_manager_init(struct CollisionManager *self, struct Player *player, struct Bullet *player_bullets, int bullets_n, struct Enemy *enemies, int enemies_n) {
+void collision_manager_init(struct CollisionManager *self, struct ParticleManager *particle_manager, struct Player *player, struct Bullet *player_bullets, int bullets_n, struct Enemy *enemies, int enemies_n) {
+    self->particle_manager = particle_manager;
     self->player = player;
     self->player_bullets = player_bullets;
     self->bullets_n = bullets_n;
@@ -1074,6 +1224,8 @@ void collision_manager_enemies_vs_player_bullets(struct CollisionManager *self) 
             if (SDL_HasIntersection(&self->enemies[i].rect, &self->player_bullets[j].rect) == SDL_TRUE) {
                 self->enemies[i].alive = 0;
                 self->player_bullets[j].alive = 0;
+
+                collision_manager_make_explosion(self, self->enemies[i].x, self->enemies[i].y);
                 break;
             }
         }
@@ -1083,6 +1235,20 @@ void collision_manager_enemies_vs_player_bullets(struct CollisionManager *self) 
 void collision_manager_update(struct CollisionManager *self) {
     collision_manager_player_vs_enemies(self);
     collision_manager_enemies_vs_player_bullets(self);
+}
+
+void collision_manager_make_explosion(struct CollisionManager *self, float x, float y) {
+    for (int i = 0; i < EXPLOSION_PARTICLES_N; i++) {
+        struct Particle *particle = particle_manager_get_free(self->particle_manager);
+
+        particle_set_x(particle, x);
+        particle_set_y(particle, y);
+
+        particle->vx = EXPLOSION_PARTICLES_VX[i];
+        particle->vy = EXPLOSION_PARTICLES_VY[i];
+
+        particle->alive = 1;
+    }
 }
 // END NAV_CollisionManager
 
@@ -1135,11 +1301,9 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
 
         while (lag >= MS_PER_UPDATE) {
             player_update(&PLAYER);
-
             bullet_manager_update(&PLAYER_BULLET_MANAGER);
-
             enemy_manager_update(&ENEMY_MANAGER);
-
+            particle_manager_update(&PARTICLE_MANAGER);
             collision_manager_update(&COLLISION_MANAGER);
 
             lag -= MS_PER_UPDATE;
@@ -1150,11 +1314,10 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // grey
         SDL_RenderClear(renderer);
 
-        player_render(&PLAYER, renderer);
-
+        particle_manager_render(&PARTICLE_MANAGER, renderer);
         bullet_manager_render(&PLAYER_BULLET_MANAGER, renderer);
-
         enemy_manager_render(&ENEMY_MANAGER, renderer);
+        player_render(&PLAYER, renderer);
 
         SDL_RenderPresent(renderer);
 
@@ -1172,70 +1335,46 @@ int main(void) {
         return 1;
     }
 
-    SDL_Log("INFO: SDL_Init()");
-
     // create window
-    SDL_Window *window = SDL_CreateWindow(
-        "SHMUP",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        WINDOW_W,
-        WINDOW_H,
-        0
-    );
+    SDL_Window *window = SDL_CreateWindow("WAT", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, 0);
 
     if (window == NULL) {
         SDL_Log("ERROR: SDL_CreateWindow() (%s)", SDL_GetError());
 
         SDL_Quit();
-        SDL_Log("INFO: SDL_Quit()");
 
         return 1;
     }
 
-    SDL_Log("INFO: SDL_CreateWindow()");
-
     // create renderer
-    SDL_Renderer *renderer = SDL_CreateRenderer(
-        window,
-        -1,
-        //SDL_RENDERER_ACCELERATED
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    );
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     if (renderer == NULL) {
         SDL_Log("ERROR: SDL_CreateRenderer() (%s)", SDL_GetError());
 
         SDL_DestroyWindow(window);
-        SDL_Log("INFO: SDL_DestroyWindow()");
-
         SDL_Quit();
-        SDL_Log("INFO: SDL_Quit()");
 
         return 1;
     }
 
-    SDL_Log("INFO: SDL_CreateRenderer()");
-
     rand_init(time(NULL));
-    bullet_manager_init(&PLAYER_BULLET_MANAGER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, 0, 0, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
+    bullet_manager_init(&PLAYER_BULLET_MANAGER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
     player_init(&PLAYER, &PLAYER_BULLET_MANAGER, WINDOW_W / 2, WINDOW_H / 2, PLAYER_W, PLAYER_H, PLAYER_V);
-    enemy_manager_init(&ENEMY_MANAGER, ENEMIES, ENEMIES_MAX, 0, 0, ENEMY_W, ENEMY_H, ENEMY_V);
-    collision_manager_init(&COLLISION_MANAGER, &PLAYER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, ENEMIES, ENEMIES_MAX);
+    enemy_manager_init(&ENEMY_MANAGER, ENEMIES, ENEMIES_MAX, ENEMY_W, ENEMY_H, ENEMY_V);
+    particle_manager_init(&PARTICLE_MANAGER, PARTICLES, PARTICLES_MAX, PARTICLE_W, PARTICLE_H, PARTICLE_V);
+    collision_manager_init(&COLLISION_MANAGER, &PARTICLE_MANAGER, &PLAYER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, ENEMIES, ENEMIES_MAX);
 
     game_run(&GAME, renderer);
 
     // destroy renderer
     SDL_DestroyRenderer(renderer);
-    SDL_Log("INFO: SDL_DestroyRenderer()");
 
     // destroy window
     SDL_DestroyWindow(window);
-    SDL_Log("INFO: SDL_DestroyWindow()");
 
     // quit SDL
     SDL_Quit();
-    SDL_Log("INFO: SDL_Quit()");
 
     return 0;
 }

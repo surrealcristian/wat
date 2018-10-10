@@ -544,6 +544,7 @@ struct Text {
 
 void text_init(struct Text *text);
 void text_render_character(struct Text *text, SDL_Renderer *renderer, int character, float x, float y);
+void text_render(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y);
 // END NAV_Text
 
 // NAV_Keys
@@ -833,6 +834,28 @@ void text_render_character(struct Text *self, SDL_Renderer *renderer, int charac
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         SDL_RenderFillRect(renderer, &self->rect);
+    }
+}
+
+void text_render(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y) {
+    //TODO: complete implementation
+    float letter_x = x;
+    float letter_y = y;
+    int idx;
+
+    for (int i = 0; text[i] != '\0'; i++) {
+        int c = text[i];
+
+        if (c >= '0' && c <= '9') {
+            idx = c - '0';
+        } else {
+            return;
+        }
+
+        SDL_Log("text_render: idx:%i; letter_x:%f, letter_y:%f", idx, letter_x, letter_y);
+        text_render_character(self, renderer, idx, letter_x, letter_y);
+
+        letter_x += 10;
     }
 }
 // END NAV_Text
@@ -1502,6 +1525,9 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             //TODO: complete
         }
 
+        text_render(&TEXT, renderer, "0123456789", 374, 8);
+
+        /*
         text_render_character(&TEXT, renderer, 0, 374, 8);
         text_render_character(&TEXT, renderer, 1, 384, 8);
         text_render_character(&TEXT, renderer, 2, 394, 8);
@@ -1512,6 +1538,7 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
         text_render_character(&TEXT, renderer, 7, 444, 8);
         text_render_character(&TEXT, renderer, 8, 454, 8);
         text_render_character(&TEXT, renderer, 9, 464, 8);
+        */
 
         SDL_RenderPresent(renderer);
 

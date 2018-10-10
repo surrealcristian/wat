@@ -48,80 +48,80 @@ float EXPLOSION_PARTICLES_VX[4] = { -1.00, +1.00, -1.00, +1.00 };
 float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
 
 float CHARACTERS_DATA_POSITION_X[20] = {
-    0, 10, 20, 30,
-    0, 10, 20, 30,
-    0, 10, 20, 30,
-    0, 10, 20, 30,
-    0, 10, 20, 30,
+    0, 2, 4, 6,
+    0, 2, 4, 6,
+    0, 2, 4, 6,
+    0, 2, 4, 6,
+    0, 2, 4, 6,
 };
 float CHARACTERS_DATA_POSITION_Y[20] = {
-    0 , 0 , 0 , 0 ,
-    10, 10, 10, 10,
-    20, 20, 20, 20,
-    30, 30, 30, 30,
-    40, 40, 40, 40,
+    0, 0, 0, 0,
+    2, 2, 2, 2,
+    4, 4, 4, 4,
+    6, 6, 6, 6,
+    8, 8, 8, 8,
 };
 int CHARACTERS_DATA[10][20] = {
     // 0
-    { 1, 1, 1, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 1, 1, 1, },
+    { 0, 0, 1, 0,
+      0, 1, 0, 1,
+      0, 1, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 0, },
     // 1
-    { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1, },
+    { 0, 0, 1, 0,
+      0, 1, 1, 0,
+      0, 0, 1, 0,
+      0, 0, 1, 0,
+      0, 1, 1, 1, },
     // 2
-    { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
+    { 0, 1, 1, 0,
+      1, 0, 0, 1,
+      0, 0, 1, 0,
+      0, 1, 0, 0,
       1, 1, 1, 1 },
     // 3
-    { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1 },
+    { 0, 1, 1, 0,
+      1, 0, 0, 1,
+      0, 0, 1, 0,
+      1, 0, 0, 1,
+      0, 1, 1, 0 },
     // 4
-    { 1, 1, 1, 1,
+    { 0, 0, 1, 0,
+      0, 1, 1, 0,
+      1, 0, 1, 0,
       1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1 },
+      0, 0, 1, 0 },
     // 5
     { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1 },
+      1, 0, 0, 0,
+      1, 1, 1, 0,
+      0, 0, 0, 1,
+      1, 1, 1, 0 },
     // 6
-    { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1 },
+    { 0, 1, 1, 0,
+      1, 0, 0, 0,
+      1, 1, 1, 0,
+      1, 0, 0, 1,
+      0, 1, 1, 0 },
     // 7
     { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1 },
+      1, 0, 0, 1,
+      0, 0, 1, 0,
+      0, 1, 0, 0,
+      1, 0, 0, 0 },
     // 8
-    { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1 },
+    { 0, 1, 1, 0,
+      1, 0, 0, 1,
+      0, 1, 1, 0,
+      1, 0, 0, 1,
+      0, 1, 1, 0 },
     // 9
-    { 1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1 },
+    { 0, 1, 1, 0,
+      1, 0, 0, 1,
+      0, 1, 1, 1,
+      0, 0, 0, 1,
+      0, 1, 1, 0 },
 };
 // END NAV_Config
 
@@ -543,7 +543,7 @@ struct Text {
 };
 
 void text_init(struct Text *text);
-void text_print_character(struct Text *text, float x, float y);
+void text_render_character(struct Text *text, SDL_Renderer *renderer, int character, float x, float y);
 // END NAV_Text
 
 // NAV_Keys
@@ -818,13 +818,13 @@ struct Game GAME;
 
 // NAV_Text
 void text_init(struct Text *self) {
-    self->rect.w = 8;
-    self->rect.h = 8;
+    self->rect.w = 2;
+    self->rect.h = 2;
 }
 
 void text_render_character(struct Text *self, SDL_Renderer *renderer, int character, float x, float y) {
     for (int i = 0; i < 20; i++) {
-        if (CHARACTERS_DATA[i] == 0) {
+        if (CHARACTERS_DATA[character][i] == 0) {
             continue;
         }
 
@@ -1502,7 +1502,16 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             //TODO: complete
         }
 
-        text_render_character(&TEXT, renderer, 0, 50, 50);
+        text_render_character(&TEXT, renderer, 0, 374, 8);
+        text_render_character(&TEXT, renderer, 1, 384, 8);
+        text_render_character(&TEXT, renderer, 2, 394, 8);
+        text_render_character(&TEXT, renderer, 3, 404, 8);
+        text_render_character(&TEXT, renderer, 4, 414, 8);
+        text_render_character(&TEXT, renderer, 5, 424, 8);
+        text_render_character(&TEXT, renderer, 6, 434, 8);
+        text_render_character(&TEXT, renderer, 7, 444, 8);
+        text_render_character(&TEXT, renderer, 8, 454, 8);
+        text_render_character(&TEXT, renderer, 9, 464, 8);
 
         SDL_RenderPresent(renderer);
 

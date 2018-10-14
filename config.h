@@ -1,0 +1,46 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define WINDOW_W 480
+#define WINDOW_H 640
+
+#define UPDATES_PER_SECOND 120.0
+#define MS_PER_UPDATE 8.33 // 1000 / 120.0
+#define SLEEP_MS 2.08 // 1000 / 480.0
+
+#define STATE_IN_GAME 0
+#define STATE_PAUSE 1
+
+#define PLAYER_WIDTH 16
+#define PLAYER_HEIGHT 16
+#define PLAYER_V 512
+
+#define PLAYER_BULLETS_MAX 128
+#define PLAYER_BULLETS_INIT_N 5
+#define PLAYER_BULLETS_W 4
+#define PLAYER_BULLETS_H 4
+#define PLAYER_BULLETS_V 2048
+#define PLAYER_BULLETS_VX +0
+#define PLAYER_BULLETS_VY -1
+
+#define ENEMIES_MAX 16
+#define ENEMY_WIDTH 32
+#define ENEMY_HEIGHT 32
+#define ENEMY_V 128
+#define ENEMY_VX +0
+#define ENEMY_VY +1
+
+#define PARTICLES_MAX 128
+#define PARTICLE_WIDTH 8
+#define PARTICLE_HEIGHT 8
+#define PARTICLE_V 1024
+
+#define EXPLOSION_PARTICLES_N 4
+
+extern float PLAYER_BULLETS_OFFSET_X[5];
+extern float PLAYER_BULLETS_OFFSET_Y[5];
+
+extern float EXPLOSION_PARTICLES_VX[4];
+extern float EXPLOSION_PARTICLES_VY[4];
+
+#endif

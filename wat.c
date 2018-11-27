@@ -1,7 +1,7 @@
 #include "wat.h"
 
 tinymt32_t TINYMT_STATE;
-struct Text TEXT;
+struct Text PAUSE_TEXT;
 struct Keys KEYS;
 struct InputComponent INPUT_COMPONENT;
 struct Player PLAYER;
@@ -45,7 +45,6 @@ int main(void) {
     }
 
     rand_init(&TINYMT_STATE, time(NULL));
-    text_init(&TEXT);
     bullet_manager_init(&PLAYER_BULLET_MANAGER, PLAYER_BULLETS, PLAYER_BULLETS_MAX, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
     player_init(&PLAYER, &KEYS, &PLAYER_BULLET_MANAGER, WINDOW_W / 2, WINDOW_H / 2, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_V);
     enemy_manager_init(&ENEMY_MANAGER, &TINYMT_STATE, ENEMIES, ENEMIES_MAX, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_V);
@@ -65,7 +64,8 @@ int main(void) {
         &COLLISION_MANAGER
     );
 
-    pause_state_init(&PAUSE_STATE, &TEXT);
+    text_init(&PAUSE_TEXT, "PAUSE", TEXT_SMALL, TEXT_CENTER, floor(WINDOW_W / 2), floor(WINDOW_H / 2));
+    pause_state_init(&PAUSE_STATE, &PAUSE_TEXT);
 
     game_init(&GAME, &IN_GAME_STATE, &PAUSE_STATE);
 

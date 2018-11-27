@@ -9,10 +9,11 @@
 struct Game {
     struct InputComponent *input_component;
     struct InGameState *in_game_state;
+    struct PauseState *pause_state;
     int state;
 };
 
-void game_init(struct Game *self, struct InGameState *in_game_state);
+void game_init(struct Game *self, struct InGameState *in_game_state, struct PauseState *pause_state);
 void game_set_input_component(struct Game *self, struct InputComponent *input_component);
 void game_run(struct Game *self, SDL_Renderer *renderer);
 

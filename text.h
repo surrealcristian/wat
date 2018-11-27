@@ -10,5 +10,8 @@ struct Text {
 void text_init(struct Text *text);
 void text_render_character(struct Text *text, SDL_Renderer *renderer, int character, float x, float y);
 void text_render(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y);
+void text_render_left(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y);
+void text_render_center(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y);
+void text_render_right(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y);
 
 #endif

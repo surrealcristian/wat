@@ -46,8 +46,8 @@ int CHARACTERS_DATA[36][25] = {
 };
 
 void text_init(struct Text *self) {
-    self->rect.w = 2;
-    self->rect.h = 2;
+    self->rect.w = 2; // TODO: move to constant
+    self->rect.h = 2; // TODO: move to constant
 }
 
 void text_render_character(struct Text *self, SDL_Renderer *renderer, int character, float x, float y) {
@@ -62,6 +62,24 @@ void text_render_character(struct Text *self, SDL_Renderer *renderer, int charac
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         SDL_RenderFillRect(renderer, &self->rect);
     }
+}
+
+void text_render_left(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y) {
+    text_render(self, renderer, text, x, y);
+}
+
+void text_render_center(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y) {
+    float text_len = strlen(text);
+    int n_character_px = 5;
+    int n_character_spacing_px = 1;
+    int px_width = 2;
+
+    x = x - ((text_len * n_character_px * px_width) + ((text_len - 1) * n_character_spacing_px * px_width)) / 2;
+    text_render(self, renderer, text, x, y);
+}
+
+void text_render_right(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y) {
+
 }
 
 void text_render(struct Text *self, SDL_Renderer *renderer, char *text, float x, float y) {

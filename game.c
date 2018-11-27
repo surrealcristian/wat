@@ -1,7 +1,8 @@
 #include "game.h"
 
-void game_init(struct Game *self, struct InGameState *in_game_state) {
+void game_init(struct Game *self, struct InGameState *in_game_state, struct PauseState *pause_state) {
     self->in_game_state = in_game_state;
+    self->pause_state = pause_state;
 
     self->state = STATE_IN_GAME;
 }
@@ -39,7 +40,7 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
             if (self->state == STATE_IN_GAME) {
                 in_game_state_update(self->in_game_state);
             } else if (self->state == STATE_PAUSE) {
-                //TODO: complete
+                // pause_state_update(self->pause_state);
             }
 
             lag -= MS_PER_UPDATE;
@@ -53,10 +54,9 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
         if (self->state == STATE_IN_GAME) {
             in_game_state_render(self->in_game_state, renderer);
         } else if (self->state == STATE_PAUSE) {
-            //TODO: complete
+            pause_state_render(self->pause_state, renderer);
         }
 
-        //text_render(&TEXT, renderer, "UVWXYZ", 354, 8);
         SDL_RenderPresent(renderer);
 
         //SDL_Delay(SLEEP_MS);

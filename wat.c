@@ -13,6 +13,7 @@ struct Particle PARTICLES[PARTICLES_MAX];
 struct ParticleManager PARTICLE_MANAGER;
 struct CollisionManager COLLISION_MANAGER;
 struct InGameState IN_GAME_STATE;
+struct PauseState PAUSE_STATE;
 struct Game GAME;
 
 int main(void) {
@@ -64,7 +65,9 @@ int main(void) {
         &COLLISION_MANAGER
     );
 
-    game_init(&GAME, &IN_GAME_STATE);
+    pause_state_init(&PAUSE_STATE, &TEXT);
+
+    game_init(&GAME, &IN_GAME_STATE, &PAUSE_STATE);
 
     input_component_init(&INPUT_COMPONENT, &KEYS, &GAME, &PLAYER);
 

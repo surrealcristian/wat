@@ -1,6 +1,14 @@
 #include "enemy_manager.h"
 
-void enemy_manager_init(struct EnemyManager *self, tinymt32_t *rand_state, struct Enemy *enemies, int n, int w, int h, int v) {
+void enemy_manager_init(
+    struct EnemyManager *self,
+    tinymt32_t          *rand_state,
+    struct Enemy        *enemies,
+    int                 n,
+    int                 w,
+    int                 h,
+    int                 v
+) {
     self->rand_state = rand_state;
 
     self->enemies = enemies;
@@ -14,7 +22,9 @@ void enemy_manager_init(struct EnemyManager *self, tinymt32_t *rand_state, struc
     }
 }
 
-struct Enemy *enemy_manager_get_free(struct EnemyManager *self) {
+struct Enemy *enemy_manager_get_free(
+    struct EnemyManager *self
+) {
     struct Enemy *enemy = NULL;
 
     for (int i = 0; i < self->n; i++) {
@@ -30,7 +40,9 @@ struct Enemy *enemy_manager_get_free(struct EnemyManager *self) {
     return enemy;
 }
 
-void enemy_manager_spawn(struct EnemyManager *self) {
+void enemy_manager_spawn(
+    struct EnemyManager *self
+) {
     struct Enemy *enemy = enemy_manager_get_free(self);
 
     if (enemy == NULL) {
@@ -46,7 +58,9 @@ void enemy_manager_spawn(struct EnemyManager *self) {
     enemy->vy = ENEMY_VY;
 }
 
-void enemy_manager_update(struct EnemyManager *self) {
+void enemy_manager_update(
+    struct EnemyManager *self
+) {
     for (int i = 0; i < self->n; i++) {
         if (self->enemies[i].alive == 0) {
             continue;
@@ -63,7 +77,10 @@ void enemy_manager_update(struct EnemyManager *self) {
     }
 }
 
-void enemy_manager_render(struct EnemyManager *self, SDL_Renderer *renderer) {
+void enemy_manager_render(
+    struct EnemyManager *self,
+    SDL_Renderer        *renderer
+) {
     for (int i = 0; i < self->n; i++) {
         if (self->enemies[i].alive == 0) {
             continue;

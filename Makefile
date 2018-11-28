@@ -16,6 +16,7 @@ OBJECTS=\
 		particle.o \
 		particle_manager.o \
 		collision_manager.o \
+		welcome_state.o \
 		in_game_state.o \
 		pause_state.o \
 		game.o \

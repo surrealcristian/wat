@@ -7,11 +7,20 @@
 
 struct PauseState {
     struct Text *text;
-    char *pause_text;
 };
 
-void pause_state_init(struct PauseState *self, struct Text *text);
-void pause_state_update(struct PauseState *self);
-void pause_state_render(struct PauseState *self, SDL_Renderer *renderer);
+void pause_state_init(
+    struct PauseState *self,
+    struct Text       *text
+);
+
+void pause_state_update(
+    struct PauseState *self
+);
+
+void pause_state_render(
+    struct PauseState *self,
+    SDL_Renderer      *renderer
+);
 
 #endif

@@ -1,17 +1,29 @@
 #include "game.h"
 
-void game_init(struct Game *self, struct InGameState *in_game_state, struct PauseState *pause_state) {
+void game_init(
+    struct Game         *self,
+    struct WelcomeState *welcome_state,
+    struct InGameState  *in_game_state,
+    struct PauseState   *pause_state
+) {
+    self->welcome_state = welcome_state;
     self->in_game_state = in_game_state;
     self->pause_state = pause_state;
 
-    self->state = STATE_IN_GAME;
+    self->state = STATE_WELCOME;
 }
 
-void game_set_input_component(struct Game *self, struct InputComponent *input_component) {
+void game_set_input_component(
+    struct Game           *self,
+    struct InputComponent *input_component
+) {
     self->input_component = input_component;
 }
 
-void game_run(struct Game *self, SDL_Renderer *renderer) {
+void game_run(
+    struct Game  *self,
+    SDL_Renderer *renderer
+) {
     int keep_running = 1;
 
     Uint64 previous = SDL_GetPerformanceCounter();
@@ -37,10 +49,12 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
         }
 
         while (lag >= MS_PER_UPDATE) {
-            if (self->state == STATE_IN_GAME) {
+            if (self->state == STATE_WELCOME) {
+                welcome_state_update(self->welcome_state);
+            } else if (self->state == STATE_IN_GAME) {
                 in_game_state_update(self->in_game_state);
             } else if (self->state == STATE_PAUSE) {
-                // pause_state_update(self->pause_state);
+                pause_state_update(self->pause_state);
             }
 
             lag -= MS_PER_UPDATE;
@@ -51,7 +65,9 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // grey
         SDL_RenderClear(renderer);
 
-        if (self->state == STATE_IN_GAME) {
+        if (self->state == STATE_WELCOME) {
+            welcome_state_render(self->welcome_state, renderer);
+        } else if (self->state == STATE_IN_GAME) {
             in_game_state_render(self->in_game_state, renderer);
         } else if (self->state == STATE_PAUSE) {
             pause_state_render(self->pause_state, renderer);

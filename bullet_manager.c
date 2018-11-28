@@ -1,6 +1,13 @@
 #include "bullet_manager.h"
 
-void bullet_manager_init(struct BulletManager *self, struct Bullet *bullets, int n, int w, int h, int v) {
+void bullet_manager_init(
+    struct BulletManager *self,
+    struct Bullet        *bullets,
+    int                  n,
+    int                  w,
+    int                  h,
+    int                  v
+) {
     self->bullets = bullets;
     self->n = n;
 
@@ -9,7 +16,9 @@ void bullet_manager_init(struct BulletManager *self, struct Bullet *bullets, int
     }
 }
 
-struct Bullet *bullet_manager_get_free(struct BulletManager *self) {
+struct Bullet *bullet_manager_get_free(
+    struct BulletManager *self
+) {
     struct Bullet *bullet = NULL;
 
     for (int i = 0; i < self->n; i++) {
@@ -25,7 +34,9 @@ struct Bullet *bullet_manager_get_free(struct BulletManager *self) {
     return bullet;
 }
 
-void bullet_manager_update(struct BulletManager *self) {
+void bullet_manager_update(
+    struct BulletManager *self
+) {
     for (int i = 0; i < self->n; i++) {
         if (self->bullets[i].alive == 0) {
             continue;
@@ -35,7 +46,10 @@ void bullet_manager_update(struct BulletManager *self) {
     }
 }
 
-void bullet_manager_render(struct BulletManager *self, SDL_Renderer *renderer) {
+void bullet_manager_render(
+    struct BulletManager *self,
+    SDL_Renderer         *renderer
+) {
     for (int i = 0; i < self->n; i++) {
         if (self->bullets[i].alive == 0) {
             continue;

@@ -8,8 +8,9 @@
 #define MS_PER_UPDATE 8.33 // 1000 / 120.0
 #define SLEEP_MS 2.08 // 1000 / 480.0
 
-#define STATE_IN_GAME 0
-#define STATE_PAUSE 1
+#define STATE_WELCOME 0
+#define STATE_IN_GAME 1
+#define STATE_PAUSE   2
 
 #define PLAYER_WIDTH 16
 #define PLAYER_HEIGHT 16

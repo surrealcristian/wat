@@ -1,7 +1,7 @@
 #include "text.h"
 
-float CHARACTERS_DATA_POSITION_X[25] = { 0, 2, 4, 6, 8,    0, 2, 4, 6, 8,    0, 2, 4, 6, 8,    0, 2, 4, 6, 8,    0, 2, 4, 6, 8, };
-float CHARACTERS_DATA_POSITION_Y[25] = { 0, 0, 0, 0, 0,    2, 2, 2, 2, 2,    4, 4, 4, 4, 4,    6, 6, 6, 6, 6,    8, 8, 8, 8, 8, };
+float CHARACTERS_DATA_POSITION_X[25] = { 0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4, };
+float CHARACTERS_DATA_POSITION_Y[25] = { 0, 0, 0, 0, 0,    1, 1, 1, 1, 1,    2, 2, 2, 2, 2,    3, 3, 3, 3, 3,    4, 4, 4, 4, 4, };
 
 int CHARACTERS_DATA[36][25] = {
     /* 0 */ { 0, 1, 1, 1, 0,    1, 0, 0, 1, 1,    1, 0, 1, 0, 1,    1, 1, 0, 0, 1,    0, 1, 1, 1, 0, },
@@ -45,55 +45,105 @@ int CHARACTERS_DATA[36][25] = {
     /* Z */ { 1, 1, 1, 1, 1,    0, 0, 0, 1, 0,    0, 0, 1, 0, 0,    0, 1, 0, 0, 0,    1, 1, 1, 1, 1, },
 };
 
-void text_init(struct Text *self, char *value, int size, int align, float x, float y) {
+void text_init(
+    struct Text *self,
+    char        *value,
+    int         size,
+    int         align,
+    float       x,
+    float       y
+) {
     self->value = value;
     self->size = size;
     self->align = align;
     self->x = x;
     self->y = y;
 
-    self->rect.w = 2; // TODO: move to constant
-    self->rect.h = 2; // TODO: move to constant
+    if (self->size == TEXT_SMALL) {
+        self->size_px = TEXT_SMALL_PX;
+    } else if (self->size == TEXT_MEDIUM) {
+        self->size_px = TEXT_MEDIUM_PX;
+    } else if (self->size == TEXT_LARGE) {
+        self->size_px = TEXT_LARGE_PX;
+    }
+
+    self->rect.w = self->size_px;
+    self->rect.h = self->size_px;
 
     self->value_len = strlen(self->value);
-
-    int n_character_px = 5;
-    int n_character_spacing_px = 1;
-    int px_width = 2;
 
     if (self->align == TEXT_LEFT) {
         self->init_x = self->x;
     } else if (self->align == TEXT_CENTER) {
-        self->init_x = self->x - ((self->value_len * n_character_px * px_width) + ((self->value_len - 1) * n_character_spacing_px * px_width)) / 2;
+        self->init_x = self->x - ((self->value_len * CHARACTER_N_SQUARES * self->size_px) + ((self->value_len - 1) * CHARACTER_SPACING_N_SQUARES * self->size_px)) / 2;
     } else if (self->align == TEXT_RIGHT) {
-        self->init_x = self->x - ((self->value_len * n_character_px * px_width) + ((self->value_len - 1) * n_character_spacing_px * px_width));
+        self->init_x = self->x - ((self->value_len * CHARACTER_N_SQUARES * self->size_px) + ((self->value_len - 1) * CHARACTER_SPACING_N_SQUARES * self->size_px));
     }
+
+    self->init_y = self->y - (CHARACTER_N_SQUARES * self->size_px) / 2;
 }
 
-void text_set_value(struct Text *self, char *value) {
+void text_set_value(
+    struct Text *self,
+    char        *value
+) {
     self->value = value;
 }
 
-void text_set_size(struct Text *self, int size) {
+void text_set_size(
+    struct Text *self,
+    int         size
+) {
     self->size = size;
 }
 
-void text_set_align(struct Text *self, int align) {
+void text_set_align(
+    struct Text *self,
+    int         align
+) {
     self->align = align;
 }
 
-void text_set_x(struct Text *self, float x) {
+void text_set_x(
+    struct Text *self,
+    float       x
+) {
     self->x = x;
 }
 
-void text_set_y(struct Text *self, float y) {
+void text_set_y(
+    struct Text *self,
+    float       y
+) {
     self->y = y;
 }
 
-void text_render(struct Text *self, SDL_Renderer *renderer) {
-    //TODO: complete implementation
+void text_render_character(
+    struct Text  *self,
+    SDL_Renderer *renderer,
+    int          character,
+    float        x,
+    float        y
+) {
+    for (int i = 0; i < 25; i++) {
+        if (CHARACTERS_DATA[character][i] == 0) {
+            continue;
+        }
+
+        self->rect.x = x + CHARACTERS_DATA_POSITION_X[i] * self->size_px;
+        self->rect.y = y + CHARACTERS_DATA_POSITION_Y[i] * self->size_px;
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_RenderFillRect(renderer, &self->rect);
+    }
+}
+
+void text_render(
+    struct Text  *self,
+    SDL_Renderer *renderer
+) {
     float letter_x = self->init_x;
-    float letter_y = self->y;
+    float letter_y = self->init_y;
     int idx;
 
     for (int i = 0; self->value[i] != '\0'; i++) {
@@ -109,20 +159,6 @@ void text_render(struct Text *self, SDL_Renderer *renderer) {
 
         text_render_character(self, renderer, idx, letter_x, letter_y);
 
-        letter_x += 12;
-    }
-}
-
-void text_render_character(struct Text *self, SDL_Renderer *renderer, int character, float x, float y) {
-    for (int i = 0; i < 25; i++) {
-        if (CHARACTERS_DATA[character][i] == 0) {
-            continue;
-        }
-
-        self->rect.x = x + CHARACTERS_DATA_POSITION_X[i];
-        self->rect.y = y + CHARACTERS_DATA_POSITION_Y[i];
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-        SDL_RenderFillRect(renderer, &self->rect);
+        letter_x += (CHARACTER_N_SQUARES + CHARACTER_SPACING_N_SQUARES) * self->size_px;
     }
 }

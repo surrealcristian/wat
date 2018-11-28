@@ -7,17 +7,21 @@
 #include "player.h"
 
 struct InputComponent {
-    struct Keys *keys;
-    struct Game *game;
+    struct Keys   *keys;
+    struct Game   *game;
     struct Player *player;
 };
 
 void input_component_init(
     struct InputComponent *self,
-    struct Keys *keys,
-    struct Game *game,
-    struct Player *player
+    struct Keys           *keys,
+    struct Game           *game,
+    struct Player         *player
 );
-void input_component_update(struct InputComponent *self, SDL_Event *event);
+
+void input_component_update(
+    struct InputComponent *self,
+    SDL_Event             *event
+);
 
 #endif

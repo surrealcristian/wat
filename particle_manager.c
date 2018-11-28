@@ -1,6 +1,13 @@
 #include "particle_manager.h"
 
-void particle_manager_init(struct ParticleManager *self, struct Particle *particles, int n, int w, int h, int v) {
+void particle_manager_init(
+    struct ParticleManager *self,
+    struct Particle        *particles,
+    int                    n,
+    int                    w,
+    int                    h,
+    int                    v
+) {
     self->particles = particles;
     self->n = n;
 
@@ -9,7 +16,9 @@ void particle_manager_init(struct ParticleManager *self, struct Particle *partic
     }
 }
 
-struct Particle *particle_manager_get_free(struct ParticleManager *self) {
+struct Particle *particle_manager_get_free(
+    struct ParticleManager *self
+) {
     struct Particle *particle = NULL;
 
     for (int i = 0; i < self->n; i++) {
@@ -25,7 +34,9 @@ struct Particle *particle_manager_get_free(struct ParticleManager *self) {
     return particle;
 }
 
-void particle_manager_update(struct ParticleManager *self) {
+void particle_manager_update(
+    struct ParticleManager *self
+) {
     for (int i = 0; i < self->n; i++) {
         if (self->particles[i].alive == 0) {
             continue;
@@ -35,7 +46,10 @@ void particle_manager_update(struct ParticleManager *self) {
     }
 }
 
-void particle_manager_render(struct ParticleManager *self, SDL_Renderer *renderer) {
+void particle_manager_render(
+    struct ParticleManager *self,
+    SDL_Renderer           *renderer
+) {
     for (int i = 0; i < self->n; i++) {
         if (self->particles[i].alive == 0) {
             continue;

@@ -18,6 +18,7 @@
 #include "particle.h"
 #include "particle_manager.h"
 #include "collision_manager.h"
+#include "welcome_state.h"
 #include "in_game_state.h"
 #include "pause_state.h"
 #include "game.h"

@@ -1,6 +1,15 @@
 #include "player.h"
 
-void player_init(struct Player *self, struct Keys *keys, struct BulletManager *bullet_manager, float x, float y, int w, int h, int v) {
+void player_init(
+    struct Player        *self,
+    struct Keys          *keys,
+    struct BulletManager *bullet_manager,
+    float                x,
+    float                y,
+    int                  w,
+    int                  h,
+    int                  v
+) {
     self->keys = keys;
     self->bullet_manager = bullet_manager;
 
@@ -22,7 +31,10 @@ void player_init(struct Player *self, struct Keys *keys, struct BulletManager *b
     self->fire_spacing = 128;
 }
 
-void player_set_x(struct Player *self, float value) {
+void player_set_x(
+    struct Player *self,
+    float         value
+) {
     float x_min = 0 + self->w / 2;
     float x_max = WINDOW_W - self->w / 2;
 
@@ -37,7 +49,10 @@ void player_set_x(struct Player *self, float value) {
     self->rect.x = floor(self->x - (self->w / 2));
 }
 
-void player_set_y(struct Player *self, float value) {
+void player_set_y(
+    struct Player *self,
+    float         value
+) {
     float y_min = 0 + self->h / 2;
     float y_max = WINDOW_H - self->h / 2;
 
@@ -52,17 +67,23 @@ void player_set_y(struct Player *self, float value) {
     self->rect.y = floor(self->y - (self->h / 2));
 }
 
-void player_on_button_a_keydown(struct Player *self) {
+void player_on_button_a_keydown(
+    struct Player *self
+) {
     self->firing = 1;
     self->fire_time = self->fire_spacing * 1.0;
 }
 
-void player_on_button_a_keyup(struct Player *self) {
+void player_on_button_a_keyup(
+    struct Player *self
+) {
     self->firing = 0;
     self->fire_time = 0.0;
 }
 
-void player_fire(struct Player *self) {
+void player_fire(
+    struct Player *self
+) {
     for (int i = 0; i < self->bullets_n; i++) {
         struct Bullet *bullet = bullet_manager_get_free(self->bullet_manager);
 
@@ -80,7 +101,9 @@ void player_fire(struct Player *self) {
     }
 }
 
-void player_update(struct Player *self) {
+void player_update(
+    struct Player *self
+) {
     self->vx = 0;
     self->vy = 0;
 
@@ -113,7 +136,10 @@ void player_update(struct Player *self) {
     }
 }
 
-void player_render(struct Player *self, SDL_Renderer *renderer) {
+void player_render(
+    struct Player *self,
+    SDL_Renderer  *renderer
+) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderFillRect(renderer, &self->rect);
 }

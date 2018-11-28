@@ -2,16 +2,19 @@
 
 void input_component_init(
     struct InputComponent *self,
-    struct Keys *keys,
-    struct Game *game,
-    struct Player *player
+    struct Keys           *keys,
+    struct Game           *game,
+    struct Player         *player
 ) {
     self->keys = keys;
     self->game = game;
     self->player = player;
 }
 
-void input_component_update(struct InputComponent *self, SDL_Event *event) {
+void input_component_update(
+    struct InputComponent *self,
+    SDL_Event             *event
+) {
     int sym;
 
     if (event->type == SDL_KEYDOWN) {
@@ -32,7 +35,9 @@ void input_component_update(struct InputComponent *self, SDL_Event *event) {
         } else if (sym == SDLK_z) {
             self->keys->z = 1;
 
-            player_on_button_a_keydown(self->player);
+            if (self->game->state == STATE_IN_GAME) {
+                player_on_button_a_keydown(self->player);
+            }
         }
     } else if (event->type == SDL_KEYUP) {
         if (event->key.repeat) {
@@ -52,7 +57,11 @@ void input_component_update(struct InputComponent *self, SDL_Event *event) {
         } else if (sym == SDLK_z) {
             self->keys->z = 0;
 
-            player_on_button_a_keyup(self->player);
+            if (self->game->state == STATE_WELCOME) {
+                self->game->state = STATE_IN_GAME;
+            } else if (self->game->state == STATE_IN_GAME) {
+                player_on_button_a_keyup(self->player);
+            }
         } else if (sym == SDLK_ESCAPE) {
             if (self->game->state == STATE_IN_GAME) {
                 self->game->state = STATE_PAUSE;

@@ -10,9 +10,12 @@ struct Enemy            ENEMIES[ENEMIES_MAX];
 struct EnemyManager     ENEMY_MANAGER;
 struct Particle         PARTICLES[PARTICLES_MAX];
 struct ParticleManager  PARTICLE_MANAGER;
+struct Score            SCORE;
 struct CollisionManager COLLISION_MANAGER;
 struct Text             WELCOME_TEXT;
 struct WelcomeState     WELCOME_STATE;
+struct Text             HUD_TEXT;
+struct HUD              HUD;
 struct InGameState      IN_GAME_STATE;
 struct Text             PAUSE_TEXT;
 struct PauseState       PAUSE_STATE;
@@ -90,6 +93,10 @@ int main(void) {
         PARTICLE_V
     );
 
+    score_init(
+        &SCORE
+    );
+
     collision_manager_init(
         &COLLISION_MANAGER,
         &PARTICLE_MANAGER,
@@ -97,7 +104,23 @@ int main(void) {
         PLAYER_BULLETS,
         PLAYER_BULLETS_MAX,
         ENEMIES,
-        ENEMIES_MAX
+        ENEMIES_MAX,
+        &SCORE
+    );
+
+    text_init(
+        &HUD_TEXT,
+        "0",
+        TEXT_SMALL,
+        TEXT_RIGHT,
+        floor(WINDOW_W - WINDOW_W * 0.05),
+        floor(0 + WINDOW_H * 0.05)
+    );
+
+    hud_init(
+        &HUD,
+        &SCORE,
+        &HUD_TEXT
     );
 
     in_game_state_init(
@@ -110,7 +133,9 @@ int main(void) {
         &ENEMY_MANAGER,
         PARTICLES,
         &PARTICLE_MANAGER,
-        &COLLISION_MANAGER
+        &COLLISION_MANAGER,
+        &SCORE,
+        &HUD
     );
 
     text_init(

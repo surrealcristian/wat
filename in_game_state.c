@@ -10,7 +10,9 @@ void in_game_state_init(
     struct EnemyManager     *enemy_manager,
     struct Particle         *particles,
     struct ParticleManager  *particle_manager,
-    struct CollisionManager *collision_manager
+    struct CollisionManager *collision_manager,
+    struct Score            *score,
+    struct HUD              *hud
 ) {
     self->keys                  = keys;
     self->player                = player;
@@ -21,6 +23,8 @@ void in_game_state_init(
     self->particles             = particles;
     self->particle_manager      = particle_manager;
     self->collision_manager     = collision_manager;
+    self->score                 = score;
+    self->hud                   = hud;
 }
 
 void in_game_state_update(
@@ -31,6 +35,7 @@ void in_game_state_update(
     enemy_manager_update(self->enemy_manager);
     particle_manager_update(self->particle_manager);
     collision_manager_update(self->collision_manager);
+    hud_update(self->hud);
 }
 
 void in_game_state_render(
@@ -41,4 +46,5 @@ void in_game_state_render(
     bullet_manager_render(self->player_bullet_manager, renderer);
     enemy_manager_render(self->enemy_manager, renderer);
     player_render(self->player, renderer);
+    hud_render(self->hud, renderer);
 }

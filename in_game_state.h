@@ -11,6 +11,8 @@
 #include "particle.h"
 #include "particle_manager.h"
 #include "collision_manager.h"
+#include "score.h"
+#include "hud.h"
 
 struct InGameState {
     struct Keys             *keys;
@@ -22,6 +24,8 @@ struct InGameState {
     struct Particle         *particles;
     struct ParticleManager  *particle_manager;
     struct CollisionManager *collision_manager;
+    struct Score            *score;
+    struct HUD              *hud;
 };
 
 void in_game_state_init(
@@ -34,7 +38,9 @@ void in_game_state_init(
     struct EnemyManager     *enemy_manager,
     struct Particle         *particles,
     struct ParticleManager  *particle_manager,
-    struct CollisionManager *collision_manager
+    struct CollisionManager *collision_manager,
+    struct Score            *score,
+    struct HUD              *hud
 );
 
 void in_game_state_update(

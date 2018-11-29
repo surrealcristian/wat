@@ -5,6 +5,7 @@
 #include "player.h"
 #include "bullet.h"
 #include "enemy.h"
+#include "score.h"
 
 struct CollisionManager {
     struct ParticleManager *particle_manager;
@@ -13,6 +14,7 @@ struct CollisionManager {
     int                    bullets_n;
     struct Enemy           *enemies;
     int                    enemies_n;
+    struct Score           *score;
 };
 
 void collision_manager_init(
@@ -22,7 +24,8 @@ void collision_manager_init(
     struct Bullet           *player_bullets,
     int                     bullets_n,
     struct Enemy            *enemies,
-    int                     enemies_n
+    int                     enemies_n,
+    struct Score            *score
 );
 
 void collision_manager_player_vs_enemies(

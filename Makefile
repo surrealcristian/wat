@@ -15,7 +15,9 @@ OBJECTS=\
 		enemy_manager.o \
 		particle.o \
 		particle_manager.o \
+		score.o \
 		collision_manager.o \
+		hud.o \
 		welcome_state.o \
 		in_game_state.o \
 		pause_state.o \
@@ -29,13 +31,9 @@ LDLIBS=-lm `sdl2-config --libs`
 
 CC=gcc
 
-.PHONY: clean
-
-# default goal
-
-all: $(P)
 
 $(P): $(OBJECTS)
 
+.PHONY: clean
 clean:
 	rm -f *.o $(P)

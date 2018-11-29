@@ -7,7 +7,8 @@ void collision_manager_init(
     struct Bullet           *player_bullets,
     int                     bullets_n,
     struct Enemy            *enemies,
-    int                     enemies_n
+    int                     enemies_n,
+    struct Score            *score
 ) {
     self->particle_manager = particle_manager;
     self->player           = player;
@@ -15,6 +16,7 @@ void collision_manager_init(
     self->bullets_n        = bullets_n;
     self->enemies          = enemies;
     self->enemies_n        = enemies_n;
+    self->score            = score;
 }
 
 void collision_manager_player_vs_enemies(
@@ -54,6 +56,9 @@ void collision_manager_enemies_vs_player_bullets(
                 self->player_bullets[j].alive = 0;
 
                 collision_manager_make_explosion(self, self->enemies[i].x, self->enemies[i].y);
+
+                self->score->value += ENEMY_SCORE;
+
                 break;
             }
         }

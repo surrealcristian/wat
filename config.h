@@ -38,6 +38,8 @@
 
 #define EXPLOSION_PARTICLES_N 4
 
+#define ENEMY_SCORE 10
+
 extern float PLAYER_BULLETS_OFFSET_X[5];
 extern float PLAYER_BULLETS_OFFSET_Y[5];
 

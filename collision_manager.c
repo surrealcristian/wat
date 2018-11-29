@@ -10,11 +10,11 @@ void collision_manager_init(
     int                     enemies_n
 ) {
     self->particle_manager = particle_manager;
-    self->player = player;
-    self->player_bullets = player_bullets;
-    self->bullets_n = bullets_n;
-    self->enemies = enemies;
-    self->enemies_n = enemies_n;
+    self->player           = player;
+    self->player_bullets   = player_bullets;
+    self->bullets_n        = bullets_n;
+    self->enemies          = enemies;
+    self->enemies_n        = enemies_n;
 }
 
 void collision_manager_player_vs_enemies(

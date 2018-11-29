@@ -10,13 +10,13 @@ void player_init(
     int                  h,
     int                  v
 ) {
-    self->keys = keys;
+    self->keys           = keys;
     self->bullet_manager = bullet_manager;
 
     self->w = w;
-    self->rect.w = self->w;
-
     self->h = h;
+
+    self->rect.w = self->w;
     self->rect.h = self->h;
 
     player_set_x(self, x);

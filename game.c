@@ -8,7 +8,7 @@ void game_init(
 ) {
     self->welcome_state = welcome_state;
     self->in_game_state = in_game_state;
-    self->pause_state = pause_state;
+    self->pause_state   = pause_state;
 
     self->state = STATE_WELCOME;
 }

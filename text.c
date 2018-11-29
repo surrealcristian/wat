@@ -54,10 +54,10 @@ void text_init(
     float       y
 ) {
     self->value = value;
-    self->size = size;
+    self->size  = size;
     self->align = align;
-    self->x = x;
-    self->y = y;
+    self->x     = x;
+    self->y     = y;
 
     if (self->size == TEXT_SMALL) {
         self->size_px = TEXT_SMALL_PX;
@@ -144,6 +144,7 @@ void text_render(
 ) {
     float letter_x = self->init_x;
     float letter_y = self->init_y;
+
     int idx;
 
     for (int i = 0; self->value[i] != '\0'; i++) {

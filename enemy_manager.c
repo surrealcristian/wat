@@ -10,11 +10,10 @@ void enemy_manager_init(
     int                 v
 ) {
     self->rand_state = rand_state;
+    self->enemies    = enemies;
+    self->n          = n;
 
-    self->enemies = enemies;
-    self->n = n;
-
-    self->time = 0.0;
+    self->time    = 0.0;
     self->spacing = 1000.0;
 
     for (int i = 0; i < self->n; i++) {

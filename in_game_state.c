@@ -12,15 +12,15 @@ void in_game_state_init(
     struct ParticleManager  *particle_manager,
     struct CollisionManager *collision_manager
 ) {
-    self->keys = keys;
-    self->player = player;
-    self->player_bullets = player_bullets;
+    self->keys                  = keys;
+    self->player                = player;
+    self->player_bullets        = player_bullets;
     self->player_bullet_manager = player_bullet_manager;
-    self->enemies = enemies;
-    self->enemy_manager = enemy_manager;
-    self->particles = particles;
-    self->particle_manager = particle_manager;
-    self->collision_manager = collision_manager;
+    self->enemies               = enemies;
+    self->enemy_manager         = enemy_manager;
+    self->particles             = particles;
+    self->particle_manager      = particle_manager;
+    self->collision_manager     = collision_manager;
 }
 
 void in_game_state_update(

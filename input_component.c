@@ -6,8 +6,8 @@ void input_component_init(
     struct Game           *game,
     struct Player         *player
 ) {
-    self->keys = keys;
-    self->game = game;
+    self->keys   = keys;
+    self->game   = game;
     self->player = player;
 }
 

@@ -9,7 +9,7 @@ void bullet_manager_init(
     int                  v
 ) {
     self->bullets = bullets;
-    self->n = n;
+    self->n       = n;
 
     for (int i = 0; i < n; i++) {
         bullet_init(&bullets[i], 0, 0, w, h, v);

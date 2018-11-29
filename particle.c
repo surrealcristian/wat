@@ -9,9 +9,9 @@ void particle_init(
     int             v
 ) {
     self->w = w;
-    self->rect.w = self->w;
-
     self->h = h;
+
+    self->rect.w = self->w;
     self->rect.h = self->h;
 
     particle_set_x(self, x);

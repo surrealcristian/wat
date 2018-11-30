@@ -3,20 +3,21 @@
 
 #include "SDL.h"
 
-#define TEXT_SMALL  0
-#define TEXT_MEDIUM 1
-#define TEXT_LARGE  2
+#define TEXT_SIZE_SMALL  0
+#define TEXT_SIZE_MEDIUM 1
+#define TEXT_SIZE_LARGE  2
 
-#define TEXT_SMALL_PX  2
-#define TEXT_MEDIUM_PX 4
-#define TEXT_LARGE_PX  8
+#define TEXT_ALIGN_LEFT   0
+#define TEXT_ALIGN_CENTER 1
+#define TEXT_ALIGN_RIGHT  2
 
-#define TEXT_LEFT   0
-#define TEXT_CENTER 1
-#define TEXT_RIGHT  2
+#define RUNE_SMALL_PX  2
+#define RUNE_MEDIUM_PX 4
+#define RUNE_LARGE_PX  8
 
-#define CHARACTER_N_SQUARES         5
-#define CHARACTER_SPACING_N_SQUARES 1
+#define RUNE_W       5
+#define RUNE_H       5
+#define RUNE_SPACE_W 1
 
 struct Text {
     SDL_Rect rect;
@@ -28,8 +29,6 @@ struct Text {
 
     int      value_len;
     int      size_px;
-    float    init_x;
-    float    init_y;
 };
 
 void text_init(
@@ -66,10 +65,10 @@ void text_set_y(
     float       y
 );
 
-void text_render_character(
+void text_render_rune(
     struct Text  *self,
     SDL_Renderer *renderer,
-    int          character,
+    int          rune,
     float        x,
     float        y
 );

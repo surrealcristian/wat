@@ -1,9 +1,9 @@
 #include "text.h"
 
-float CHARACTERS_DATA_POSITION_X[25] = { 0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4, };
-float CHARACTERS_DATA_POSITION_Y[25] = { 0, 0, 0, 0, 0,    1, 1, 1, 1, 1,    2, 2, 2, 2, 2,    3, 3, 3, 3, 3,    4, 4, 4, 4, 4, };
+float RUNE_X_POSITIONS[25] = { 0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4, };
+float RUNE_Y_POSITIONS[25] = { 0, 0, 0, 0, 0,    1, 1, 1, 1, 1,    2, 2, 2, 2, 2,    3, 3, 3, 3, 3,    4, 4, 4, 4, 4, };
 
-int CHARACTERS_DATA[36][25] = {
+int RUNES[36][25] = {
     /* 0 */ { 0, 1, 1, 1, 0,    1, 0, 0, 1, 1,    1, 0, 1, 0, 1,    1, 1, 0, 0, 1,    0, 1, 1, 1, 0, },
     /* 1 */ { 0, 0, 1, 0, 0,    1, 1, 1, 0, 0,    0, 0, 1, 0, 0,    0, 0, 1, 0, 0,    1, 1, 1, 1, 1, },
     /* 2 */ { 0, 1, 1, 1, 0,    1, 0, 0, 0, 1,    0, 0, 1, 1, 0,    0, 1, 0, 0, 0,    1, 1, 1, 1, 1, },
@@ -59,28 +59,18 @@ void text_init(
     self->x     = x;
     self->y     = y;
 
-    if (self->size == TEXT_SMALL) {
-        self->size_px = TEXT_SMALL_PX;
-    } else if (self->size == TEXT_MEDIUM) {
-        self->size_px = TEXT_MEDIUM_PX;
-    } else if (self->size == TEXT_LARGE) {
-        self->size_px = TEXT_LARGE_PX;
+    if (self->size == TEXT_SIZE_SMALL) {
+        self->size_px = RUNE_SMALL_PX;
+    } else if (self->size == TEXT_SIZE_MEDIUM) {
+        self->size_px = RUNE_MEDIUM_PX;
+    } else if (self->size == TEXT_SIZE_LARGE) {
+        self->size_px = RUNE_LARGE_PX;
     }
 
     self->rect.w = self->size_px;
     self->rect.h = self->size_px;
 
     self->value_len = strlen(self->value);
-
-    if (self->align == TEXT_LEFT) {
-        self->init_x = self->x;
-    } else if (self->align == TEXT_CENTER) {
-        self->init_x = self->x - ((self->value_len * CHARACTER_N_SQUARES * self->size_px) + ((self->value_len - 1) * CHARACTER_SPACING_N_SQUARES * self->size_px)) / 2;
-    } else if (self->align == TEXT_RIGHT) {
-        self->init_x = self->x - ((self->value_len * CHARACTER_N_SQUARES * self->size_px) + ((self->value_len - 1) * CHARACTER_SPACING_N_SQUARES * self->size_px));
-    }
-
-    self->init_y = self->y - (CHARACTER_N_SQUARES * self->size_px) / 2;
 }
 
 void text_set_value(
@@ -88,6 +78,7 @@ void text_set_value(
     char        *value
 ) {
     self->value = value;
+    self->value_len = strlen(value);
 }
 
 void text_set_size(
@@ -118,20 +109,20 @@ void text_set_y(
     self->y = y;
 }
 
-void text_render_character(
+void text_render_rune(
     struct Text  *self,
     SDL_Renderer *renderer,
-    int          character,
+    int          rune,
     float        x,
     float        y
 ) {
     for (int i = 0; i < 25; i++) {
-        if (CHARACTERS_DATA[character][i] == 0) {
+        if (RUNES[rune][i] == 0) {
             continue;
         }
 
-        self->rect.x = x + CHARACTERS_DATA_POSITION_X[i] * self->size_px;
-        self->rect.y = y + CHARACTERS_DATA_POSITION_Y[i] * self->size_px;
+        self->rect.x = x + RUNE_X_POSITIONS[i] * self->size_px;
+        self->rect.y = y + RUNE_Y_POSITIONS[i] * self->size_px;
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         SDL_RenderFillRect(renderer, &self->rect);
@@ -142,8 +133,22 @@ void text_render(
     struct Text  *self,
     SDL_Renderer *renderer
 ) {
-    float letter_x = self->init_x;
-    float letter_y = self->init_y;
+    int   rune_w_px       = RUNE_W * self->size_px;
+    int   rune_h_px       = RUNE_H * self->size_px;
+    int   rune_space_w_px = RUNE_SPACE_W * self->size_px;
+    float text_w_px       = (self->value_len * rune_w_px) + ((self->value_len - 1) * rune_space_w_px);
+    float rune_x          = 0;
+    float rune_y          = 0;
+
+    if (self->align == TEXT_ALIGN_LEFT) {
+        rune_x = self->x;
+    } else if (self->align == TEXT_ALIGN_CENTER) {
+        rune_x = self->x - (text_w_px / 2);
+    } else if (self->align == TEXT_ALIGN_RIGHT) {
+        rune_x = self->x - text_w_px;
+    }
+
+    rune_y = self->y - (rune_h_px / 2);
 
     int idx;
 
@@ -158,8 +163,8 @@ void text_render(
             return;
         }
 
-        text_render_character(self, renderer, idx, letter_x, letter_y);
+        text_render_rune(self, renderer, idx, rune_x, rune_y);
 
-        letter_x += (CHARACTER_N_SQUARES + CHARACTER_SPACING_N_SQUARES) * self->size_px;
+        rune_x += rune_w_px + rune_space_w_px;
     }
 }

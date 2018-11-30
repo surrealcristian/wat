@@ -111,8 +111,8 @@ int main(void) {
     text_init(
         &HUD_TEXT,
         "0",
-        TEXT_SMALL,
-        TEXT_RIGHT,
+        TEXT_SIZE_SMALL,
+        TEXT_ALIGN_RIGHT,
         floor(WINDOW_W - WINDOW_W * 0.05),
         floor(0 + WINDOW_H * 0.05)
     );
@@ -141,8 +141,8 @@ int main(void) {
     text_init(
         &PAUSE_TEXT,
         "PAUSE",
-        TEXT_LARGE,
-        TEXT_CENTER,
+        TEXT_SIZE_LARGE,
+        TEXT_ALIGN_CENTER,
         floor(WINDOW_W / 2),
         floor(WINDOW_H / 2)
     );
@@ -155,8 +155,8 @@ int main(void) {
     text_init(
         &WELCOME_TEXT,
         "WAT",
-        TEXT_LARGE,
-        TEXT_CENTER,
+        TEXT_SIZE_LARGE,
+        TEXT_ALIGN_CENTER,
         floor(WINDOW_W / 2),
         floor(WINDOW_H / 2)
     );

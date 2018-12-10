@@ -22,7 +22,7 @@ OBJECTS=\
 		in_game_state.o \
 		pause_state.o \
 		game.o \
-		input_component.o
+		input_manager.o
 
 CFLAGS=-Wall -O3 `sdl2-config --cflags`
 #CFLAGS=-Wall -g -O0 `sdl2-config --cflags` # CFLAGS for debug

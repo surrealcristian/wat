@@ -1,7 +1,7 @@
-#include "input_component.h"
+#include "input_manager.h"
 
-void input_component_init(
-    struct InputComponent *self,
+void input_manager_init(
+    struct InputManager *self,
     struct Keys           *keys,
     struct Game           *game,
     struct Player         *player
@@ -11,8 +11,8 @@ void input_component_init(
     self->player = player;
 }
 
-void input_component_update(
-    struct InputComponent *self,
+void input_manager_update(
+    struct InputManager *self,
     SDL_Event             *event
 ) {
     int sym;

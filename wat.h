@@ -24,6 +24,6 @@
 #include "in_game_state.h"
 #include "pause_state.h"
 #include "game.h"
-#include "input_component.h"
+#include "input_manager.h"
 
 #endif

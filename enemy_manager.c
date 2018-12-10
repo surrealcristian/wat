@@ -14,7 +14,7 @@ void enemy_manager_init(
     self->n          = n;
 
     self->time    = 0.0;
-    self->spacing = 1000.0;
+    self->spacing = 100.0;
 
     for (int i = 0; i < self->n; i++) {
         enemy_init(&self->enemies[i], 0, 0, w, h, v);

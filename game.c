@@ -13,11 +13,11 @@ void game_init(
     self->state = STATE_WELCOME;
 }
 
-void game_set_input_component(
+void game_set_input_manager(
     struct Game           *self,
-    struct InputComponent *input_component
+    struct InputManager *input_manager
 ) {
-    self->input_component = input_component;
+    self->input_manager = input_manager;
 }
 
 void game_run(
@@ -45,7 +45,7 @@ void game_run(
                 keep_running = 0;
             }
 
-            input_component_update(self->input_component, &event);
+            input_manager_update(self->input_manager, &event);
         }
 
         while (lag >= MS_PER_UPDATE) {

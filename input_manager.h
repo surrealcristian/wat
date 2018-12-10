@@ -1,26 +1,26 @@
-#ifndef INPUT_COMPONENT_H
-#define INPUT_COMPONENT_H
+#ifndef INPUT_MANAGER_H
+#define INPUT_MANAGER_H
 
 #include "SDL.h"
 #include "keys.h"
 #include "game.h"
 #include "player.h"
 
-struct InputComponent {
+struct InputManager {
     struct Keys   *keys;
     struct Game   *game;
     struct Player *player;
 };
 
-void input_component_init(
-    struct InputComponent *self,
+void input_manager_init(
+    struct InputManager *self,
     struct Keys           *keys,
     struct Game           *game,
     struct Player         *player
 );
 
-void input_component_update(
-    struct InputComponent *self,
+void input_manager_update(
+    struct InputManager *self,
     SDL_Event             *event
 );
 

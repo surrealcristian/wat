@@ -2,7 +2,7 @@
 
 tinymt32_t              TINYMT_STATE;
 struct Keys             KEYS;
-struct InputComponent   INPUT_COMPONENT;
+struct InputManager     INPUT_MANAGER;
 struct Player           PLAYER;
 struct Bullet           PLAYER_BULLETS[PLAYER_BULLETS_MAX];
 struct BulletManager    PLAYER_BULLET_MANAGER;
@@ -173,16 +173,16 @@ int main(void) {
         &PAUSE_STATE
     );
 
-    input_component_init(
-        &INPUT_COMPONENT,
+    input_manager_init(
+        &INPUT_MANAGER,
         &KEYS,
         &GAME,
         &PLAYER
     );
 
-    game_set_input_component(
+    game_set_input_manager(
         &GAME,
-        &INPUT_COMPONENT
+        &INPUT_MANAGER
     );
 
     game_run(

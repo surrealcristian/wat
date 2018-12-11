@@ -30,6 +30,7 @@ struct PhysicsComponent {
     int   v;
     int   vx;
     int   vy;
+    int   alive;
 };
 
 // GraphicsComponent
@@ -67,23 +68,18 @@ struct EntityShootingComponent {
     int shooting_component_id;
 };
 
-entity_manager_init(int index);
-entity_manager_init(int index) {
-    ENTITY_TABLE[index].id = index;
-}
 
-
-struct PhysicsComponent PHYSICS_COMPONENT_TABLE[PHYSICS_COMPONENT_MAX];
-struct SDL_Rect         PHYSICS_COMPONENT_SDL_RECT[PHYSICS_COMPONENT_SDL_RECT_MAX];
+struct PhysicsComponent PHYSICS_COMPONENTS[PHYSICS_COMPONENT_MAX];
+struct SDL_Rect         PHYSICS_COMPONENT_SDL_RECTS[PHYSICS_COMPONENT_SDL_RECT_MAX];
 int                     PHYSICS_COMPONENT_SDL_RECT_INDEX[PHYSICS_COMPONENT_MAX];
 
-struct GraphicsComponent GRAPHICS_COMPONENT_TABLE[GRAPHICS_COMPONENT_MAX];
-struct SDL_Rect          GRAPHICS_COMPONENT_SDL_RECT[GRAPHICS_COMPONENT_SDL_RECT_MAX];
+struct GraphicsComponent GRAPHICS_COMPONENTS[GRAPHICS_COMPONENT_MAX];
+struct SDL_Rect          GRAPHICS_COMPONENT_SDL_RECTS[GRAPHICS_COMPONENT_SDL_RECT_MAX];
 int                      GRAPHICS_COMPONENT_SDL_RECT_INDEX[GRAPHICS_COMPONENT_MAX];
 
-struct ShootingComponent SHOOTING_COMPONENT_TABLE[SHOOTING_COMPONENT_MAX];
+struct ShootingComponent SHOOTING_COMPONENTS[SHOOTING_COMPONENT_MAX];
 
-struct Entity ENTITY_TABLE[ENTITY_MAX];
+struct Entity ENTITIES[ENTITY_MAX];
 
 int ENTITY_PHYSICS_COMPONENT_INDEX[ENTITY_MAX];
 int ENTITY_GRAPHICS_COMPONENT_INDEX[ENTITY_MAX];

@@ -1,45 +1,45 @@
 #include "player_manager.h"
 
 void player_manager_init(
-    int   index,
+    int   idx,
     float x,
     float y,
     int   w,
     int   h,
     int   v
 ) {
-    int eid = PLAYER_ENTITY_INDEX[index];
-    int pcid = ENTITY_PHYSICS_COMPONENT_INDEX[eid];
-    int scid = ENTITY_SHOOTING_COMPONENT_INDEX[eid];
-    int srid = PHYSICS_COMPONENT_SDL_RECT_INDEX[pcid];
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int pid = ENTITY_PHYSICS_IDX[eid];
+    int sid = ENTITY_SHOOTING_IDX[eid];
+    int srid = PHYSICS_SDL_RECT_IDX[pid];
 
-    PHYSICS_COMPONENTS[pcid].w = w;
-    PHYSICS_COMPONENTS[pcid].h = h;
+    PHYSICS[pid].w = w;
+    PHYSICS[pid].h = h;
 
-    PHYSICS_COMPONENT_SDL_RECTS[srid].w = PHYSICS_COMPONENTS[pcid].w;
-    PHYSICS_COMPONENT_SDL_RECTS[srid].h = PHYSICS_COMPONENTS[pcid].h;
+    PHYSICS_SDL_RECTS[srid].w = PHYSICS[pid].w;
+    PHYSICS_SDL_RECTS[srid].h = PHYSICS[pid].h;
 
-    player_manager_set_x(index, x);
-    player_manager_set_y(index, y);
+    player_manager_set_x(idx, x);
+    player_manager_set_y(idx, y);
 
-    PHYSICS_COMPONENTS[pcid].v = v;
+    PHYSICS[pid].v = v;
 
-    PHYSICS_COMPONENTS[pcid].alive = 1;
+    PHYSICS[pid].alive = 1;
 
-    SHOOTING_COMPONENTS[scid].bullets_n = PLAYER_BULLETS_INIT_N;
-    SHOOTING_COMPONENTS[scid].fire_spacing = 128;
+    SHOOTING[sid].bullets_n = PLAYER_BULLETS_INIT_N;
+    SHOOTING[sid].fire_spacing = 128;
 }
 
 void player_manager_set_x(
-    int   index,
+    int   idx,
     float value
 ) {
-    int eid = PLAYER_ENTITY_INDEX[index];
-    int pcid = ENTITY_PHYSICS_COMPONENT_INDEX[eid];
-    int srid = PHYSICS_COMPONENT_SDL_RECT_INDEX[pcid];
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int pid = ENTITY_PHYSICS_IDX[eid];
+    int srid = PHYSICS_SDL_RECT_IDX[pid];
 
-    float x_min = 0 + PHYSICS_COMPONENTS[pcid].w / 2;
-    float x_max = WINDOW_W - PHYSICS_COMPONENTS[pcid].w / 2;
+    float x_min = 0 + PHYSICS[pid].w / 2;
+    float x_max = WINDOW_W - PHYSICS[pid].w / 2;
 
     if (value < x_min) {
         value = x_min;
@@ -47,21 +47,21 @@ void player_manager_set_x(
         value = x_max;
     }
 
-    PHYSICS_COMPONENTS[pcid].x = value;
+    PHYSICS[pid].x = value;
 
-    PHYSICS_COMPONENT_SDL_RECTS[srid].x = floor(PHYSICS_COMPONENTS[pcid].x - (PHYSICS_COMPONENTS[pcid].w / 2));
+    PHYSICS_SDL_RECTS[srid].x = floor(PHYSICS[pid].x - (PHYSICS[pid].w / 2));
 }
 
 void player_manager_set_y(
-    int   index,
+    int   idx,
     float value
 ) {
-    int eid = PLAYER_ENTITY_INDEX[index];
-    int pcid = ENTITY_PHYSICS_COMPONENT_INDEX[eid];
-    int srid = PHYSICS_COMPONENT_SDL_RECT_INDEX[pcid];
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int pid = ENTITY_PHYSICS_IDX[eid];
+    int srid = PHYSICS_SDL_RECT_IDX[pid];
 
-    float y_min = 0 + PHYSICS_COMPONENTS[pcid].h / 2;
-    float y_max = WINDOW_H - PHYSICS_COMPONENTS[pcid].h / 2;
+    float y_min = 0 + PHYSICS[pid].h / 2;
+    float y_max = WINDOW_H - PHYSICS[pid].h / 2;
 
     if (value < y_min) {
         value = y_min;
@@ -69,93 +69,105 @@ void player_manager_set_y(
         value = y_max;
     }
 
-    PHYSICS_COMPONENTS[pcid].y = value;
+    PHYSICS[pid].y = value;
 
-    PHYSICS_COMPONENT_SDL_RECTS[srid].y = floor(PHYSICS_COMPONENTS[pcid].y - (PHYSICS_COMPONENTS[pcid].h / 2));
+    PHYSICS_SDL_RECTS[srid].y = floor(PHYSICS[pid].y - (PHYSICS[pid].h / 2));
 }
 
 void player_manager_on_button_a_keydown(
-    int index
+    int idx
 ) {
-    int eid = PLAYER_ENTITY_INDEX[index];
-    int scid = ENTITY_SHOOTING_COMPONENT_INDEX[eid];
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int sid = ENTITY_SHOOTING_IDX[eid];
 
-    SHOOTING_COMPONENTS[scid].firing = 1;
-    SHOOTING_COMPONENTS[scid].fire_time = SHOOTING_COMPONENTS[scid].fire_spacing * 1.0;
+    SHOOTING[sid].firing = 1;
+    SHOOTING[sid].fire_time = SHOOTING[sid].fire_spacing * 1.0;
 }
 
 void player_manager_on_button_a_keyup(
-    int index
+    int idx
 ) {
-    int eid = PLAYER_ENTITY_INDEX[index];
-    int scid = ENTITY_SHOOTING_COMPONENT_INDEX[eid];
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int sid = ENTITY_SHOOTING_IDX[eid];
 
-    SHOOTING_COMPONENTS[scid].firing = 0;
-    SHOOTING_COMPONENTS[scid].fire_time = 0.0;
+    SHOOTING[sid].firing = 0;
+    SHOOTING[sid].fire_time = 0.0;
 }
 
 void player_manager_fire(
-    int index
+    int idx
 ) {
-    int eid = PLAYER_ENTITY_INDEX[index];
-    int scid = ENTITY_SHOOTING_COMPONENT_INDEX[eid];
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int pid = ENTITY_PHYSICS_IDX[eid];
+    int sid = ENTITY_SHOOTING_IDX[eid];
 
-    for (int i = 0; i < SHOOTING_COMPONENTS[scid].bullets_n; i++) { //ccabrera
-        struct Bullet *bullet = bullet_manager_get_free(self->bullet_manager);
+    for (int i = 0; i < SHOOTING[sid].bullets_n; i++) {
+        int bid = bullet_manager_get_free();
 
-        if (bullet == NULL) {
+        if (bid == -1) {
             return;
         }
 
-        bullet->alive = 1; //TODO: bullet_set_alive()
+        int beid = BULLET_ENTITY_IDX[bid];
+        int bpid = ENTITY_PHYSICS_IDX[beid];
 
-        bullet_set_x(bullet, self->x + self->w * PLAYER_BULLETS_OFFSET_X[i]);
-        bullet_set_y(bullet, self->y + self->h * PLAYER_BULLETS_OFFSET_Y[i]);
+        PHYSICS[bpid].alive = 1;
 
-        bullet->vx = PLAYER_BULLETS_VX;
-        bullet->vy = PLAYER_BULLETS_VY;
+        bullet_manager_set_x(bid, PHYSICS[pid].x + PHYSICS[pid].w * PLAYER_BULLETS_OFFSET_X[i]);
+        bullet_manager_set_y(bid, PHYSICS[pid].y + PHYSICS[pid].h * PLAYER_BULLETS_OFFSET_Y[i]);
+
+        PHYSICS[bpid].vx = PLAYER_BULLETS_VX;
+        PHYSICS[bpid].vy = PLAYER_BULLETS_VY;
     }
 }
 
 void player_manager_update(
-    int index
+    int idx
 ) {
-    self->vx = 0;
-    self->vy = 0;
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int pid = ENTITY_PHYSICS_IDX[eid];
+    int sid = ENTITY_SHOOTING_IDX[eid];
 
-    if (self->keys->right) {
-        self->vx = +1;
+    PHYSICS[pid].vx = 0;
+    PHYSICS[pid].vy = 0;
+
+    if (KEYS.right) {
+        PHYSICS[pid].vx = +1;
     }
 
-    if (self->keys->left) {
-        self->vx = -1;
+    if (KEYS.left) {
+        PHYSICS[pid].vx = -1;
     }
 
-    if (self->keys->up) {
-        self->vy = -1;
+    if (KEYS.up) {
+        PHYSICS[pid].vy = -1;
     }
 
-    if (self->keys->down) {
-        self->vy = +1;
+    if (KEYS.down) {
+        PHYSICS[pid].vy = +1;
     }
 
-    player_set_x(self, self->x + (1.0 * self->v * self->vx / UPDATES_PER_SECOND));
-    player_set_y(self, self->y + (1.0 * self->v * self->vy / UPDATES_PER_SECOND));
+    player_manager_set_x(idx, PHYSICS[pid].x + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vx / UPDATES_PER_SECOND));
+    player_manager_set_y(idx, PHYSICS[pid].y + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vy / UPDATES_PER_SECOND));
 
-    if (self->keys->z) {
-        self->fire_time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
+    if (KEYS.z) {
+        SHOOTING[sid].fire_time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
     }
 
-    if (self->fire_time >= self->fire_spacing) {
-        player_fire(self);
-        self->fire_time = 0.0;
+    if (SHOOTING[sid].fire_time >= SHOOTING[sid].fire_spacing) {
+        player_manager_fire(idx);
+        SHOOTING[sid].fire_time = 0.0;
     }
 }
 
 void player_manager_render(
-    int           index,
+    int           idx,
     SDL_Renderer  *renderer
 ) {
+    int eid = PLAYER_ENTITY_IDX[idx];
+    int gid = ENTITY_GRAPHICS_IDX[eid];
+    int srid = GRAPHICS_SDL_RECT_IDX[gid];
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &self->rect);
+    SDL_RenderFillRect(renderer, &GRAPHICS_SDL_RECTS[srid]);
 }

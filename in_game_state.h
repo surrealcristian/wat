@@ -3,10 +3,7 @@
 
 #include "SDL.h"
 #include "keys.h"
-#include "player.h"
-#include "bullet.h"
 #include "bullet_manager.h"
-#include "enemy.h"
 #include "enemy_manager.h"
 #include "particle.h"
 #include "particle_manager.h"
@@ -15,11 +12,6 @@
 #include "hud.h"
 
 struct InGameState {
-    struct Keys             *keys;
-    struct Player           *player;
-    struct Bullet           *player_bullets;
-    struct BulletManager    *player_bullet_manager;
-    struct Enemy            *enemies;
     struct EnemyManager     *enemy_manager;
     struct Particle         *particles;
     struct ParticleManager  *particle_manager;
@@ -30,11 +22,6 @@ struct InGameState {
 
 void in_game_state_init(
     struct InGameState      *self,
-    struct Keys             *keys,
-    struct Player           *player,
-    struct Bullet           *player_bullets,
-    struct BulletManager    *player_bullet_manager,
-    struct Enemy            *enemies,
     struct EnemyManager     *enemy_manager,
     struct Particle         *particles,
     struct ParticleManager  *particle_manager,

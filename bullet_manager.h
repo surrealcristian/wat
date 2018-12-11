@@ -2,33 +2,60 @@
 #define BULLET_MANAGER_H
 
 #include "SDL.h"
-#include "bullet.h"
 
-struct BulletManager {
-    struct Bullet *bullets;
-    int           n;
-};
+//TODO: bullet.h start
 
 void bullet_manager_init(
-    struct BulletManager *self,
-    struct Bullet        *bullets,
-    int                  n,
+    int   index,
+    float x,
+    float y,
+    int   w,
+    int   h,
+    int   v
+);
+
+float bullet_manager_get_x(
+    int index
+);
+
+void bullet_manager_set_x(
+    int   index,
+    float value
+);
+
+float bullet_manager_get_y(
+    int index
+);
+
+void bullet_manager_set_y(
+    int   index,
+    float value
+);
+
+void bullet_manager_update(
+    int index
+);
+
+void bullet_manager_render(
+    int          index,
+    SDL_Renderer *renderer
+);
+
+//TODO: bullet.h end
+
+
+void bullet_manager_init_all(
     int                  w,
     int                  h,
     int                  v
 );
 
-struct Bullet *bullet_manager_get_free(
-    struct BulletManager *self
-);
+int bullet_manager_get_free();
 
-void bullet_manager_update(
-    struct BulletManager *self
-);
+void bullet_manager_update_all();
 
-void bullet_manager_render(
-    struct BulletManager *self,
-    SDL_Renderer         *renderer
+void bullet_manager_render_all(
+    SDL_Renderer *renderer
 );
 
 #endif

@@ -4,19 +4,14 @@
 #include "SDL.h"
 #include "keys.h"
 #include "game.h"
-#include "player.h"
 
 struct InputManager {
-    struct Keys   *keys;
     struct Game   *game;
-    struct Player *player;
 };
 
 void input_manager_init(
     struct InputManager *self,
-    struct Keys           *keys,
-    struct Game           *game,
-    struct Player         *player
+    struct Game           *game
 );
 
 void input_manager_update(

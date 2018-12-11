@@ -1,5 +1,5 @@
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef PLAYER_MANAGER_H
+#define PLAYER_MANAGER_H
 
 #include "SDL.h"
 #include "keys.h"

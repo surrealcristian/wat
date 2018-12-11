@@ -3,15 +3,9 @@
 void collision_manager_init(
     struct CollisionManager *self,
     struct ParticleManager  *particle_manager,
-    struct Player           *player,
-    struct Bullet           *player_bullets,
-    int                     bullets_n,
-    struct Enemy            *enemies,
-    int                     enemies_n,
     struct Score            *score
 ) {
     self->particle_manager = particle_manager;
-    self->player           = player;
     self->player_bullets   = player_bullets;
     self->bullets_n        = bullets_n;
     self->enemies          = enemies;
@@ -22,17 +16,25 @@ void collision_manager_init(
 void collision_manager_player_vs_enemies(
     struct CollisionManager *self
 ) {
-    if (self->player->alive == 0) {
+    int peid = PLAYER_ENTITY_IDX[0];
+    int ppid = ENTITY_PHYSICS_IDX[peid];
+    int psrid = PHYSICS_SDL_RECT_IDX[ppid];
+
+    if (PHYSICS[ppid].alive == 0) {
         return;
     }
 
     for (int i = 0; i < ENEMIES_MAX; i++) {
-        if (self->enemies->alive == 0) {
+        int eeid = ENEMY_ENTITY_IDX[i];
+        int epid = ENTITY_PHYSICS_IDX[eeid];
+        int esrid = PHYSICS_SDL_RECT_IDX[epid];
+
+        if (PHYSICS[epid].alive == 0) {
             continue;
         }
 
-        if (SDL_HasIntersection(&self->player->rect, &self->enemies[i].rect) == SDL_TRUE) {
-            self->enemies[i].alive = 0;
+        if (SDL_HasIntersection(&PHYSICS_SDL_RECTS[psrid], &PHYSICS_SDL_RECTS[esrid]) == SDL_TRUE) {
+            PHYSICS[epid].alive = 0;
             continue;
         }
     }
@@ -41,21 +43,33 @@ void collision_manager_player_vs_enemies(
 void collision_manager_enemies_vs_player_bullets(
     struct CollisionManager *self
 ) {
+    int peid = PLAYER_ENTITY_IDX[0];
+    int ppid = ENTITY_PHYSICS_IDX[peid];
+    int psrid = PHYSICS_SDL_RECT_IDX[ppid];
+
     for (int i = 0; i < ENEMIES_MAX; i++) {
-        if (self->enemies[i].alive == 0) {
+        int eeid = ENEMY_ENTITY_IDX[i];
+        int epid = ENTITY_PHYSICS_IDX[eeid];
+        int esrid = PHYSICS_SDL_RECT_IDX[epid];
+
+        if (PHYSICS[epid].alive == 0) {
             continue;
         }
 
-        for (int j = 0; j < PLAYER_BULLETS_MAX; j++) {
-            if (self->player_bullets[j].alive == 0) {
+        for (int j = 0; j < BULLET_PER_PLAYER; j++) {
+            int beid = BULLET_ENTITY_IDX[j];
+            int bpid = ENTITY_PHYSICS_IDX[beid];
+            int bsrid = PHYSICS_SDL_RECT_IDX[bpid];
+
+            if (PHYSICS[bpid].alive == 0) {
                 continue;
             }
 
-            if (SDL_HasIntersection(&self->enemies[i].rect, &self->player_bullets[j].rect) == SDL_TRUE) {
-                self->enemies[i].alive = 0;
-                self->player_bullets[j].alive = 0;
+            if (SDL_HasIntersection(&PHYSICS_SDL_RECTS[esrid], &PHYSICS_SDL_RECTS[bsrid]) == SDL_TRUE) {
+                PHYSICS[epid].alive = 0;
+                PHYSICS[bpid].alive = 0;
 
-                collision_manager_make_explosion(self, self->enemies[i].x, self->enemies[i].y);
+                collision_manager_make_explosion(self, PHYSICS[epid].x, PHYSICS[epid].y);
 
                 self->score->value += ENEMY_SCORE;
 

@@ -2,8 +2,6 @@
 #define COLLISION_MANAGER_H
 
 #include "particle_manager.h"
-#include "player.h"
-#include "bullet.h"
 #include "enemy.h"
 #include "score.h"
 
@@ -20,11 +18,6 @@ struct CollisionManager {
 void collision_manager_init(
     struct CollisionManager *self,
     struct ParticleManager  *particle_manager,
-    struct Player           *player,
-    struct Bullet           *player_bullets,
-    int                     bullets_n,
-    struct Enemy            *enemies,
-    int                     enemies_n,
     struct Score            *score
 );
 

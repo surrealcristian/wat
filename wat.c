@@ -1,44 +1,36 @@
 #include "wat.h"
 
 struct PhysicsComponent  PHYSICS[PHYSICS_MAX];
-SDL_Rect                 PHYSICS_SDL_RECTS[PHYSICS_SDL_RECT_MAX];
-int                      PHYSICS_SDL_RECT_IDX[PHYSICS_MAX];
-
 struct GraphicsComponent GRAPHICS[GRAPHICS_MAX];
-SDL_Rect                 GRAPHICS_SDL_RECTS[GRAPHICS_SDL_RECT_MAX];
-int                      GRAPHICS_SDL_RECT_IDX[GRAPHICS_MAX];
-
+struct HealthComponent   HEALTHS[HEALTH_MAX];
 struct ShootingComponent SHOOTING[SHOOTING_MAX];
 
-struct Entity            ENTITIES[ENTITY_MAX];
+SDL_Rect PHYSICS_SDL_RECTS[PHYSICS_SDL_RECT_MAX];
+SDL_Rect GRAPHICS_SDL_RECTS[GRAPHICS_SDL_RECT_MAX];
 
-int                      ENTITY_PHYSICS_IDX[ENTITY_MAX];
-int                      ENTITY_GRAPHICS_IDX[ENTITY_MAX];
-int                      ENTITY_SHOOTING_IDX[ENTITY_MAX];
+int PHYSICS_SDL_RECT_IDX[PHYSICS_MAX];
+int GRAPHICS_SDL_RECT_IDX[GRAPHICS_MAX];
+int ENTITY_PHYSICS_IDX[ENTITY_MAX];
+int ENTITY_GRAPHICS_IDX[ENTITY_MAX];
+int ENTITY_HEALTH_IDX[ENTITY_MAX];
+int ENTITY_SHOOTING_IDX[ENTITY_MAX];
+int PLAYER_ENTITY_IDX[PLAYER_MAX];
+int ENEMY_ENTITY_IDX[ENEMY_MAX];
+int BULLET_ENTITY_IDX[BULLET_MAX];
+int PLAYER_BULLET_IDX[PLAYER_MAX][BULLET_PER_PLAYER];
 
-int                      PLAYER_ENTITY_IDX[PLAYER_MAX];
-int                      ENEMY_ENTITY_IDX[ENEMY_MAX];
-int                      BULLET_ENTITY_IDX[BULLET_MAX];
+tinymt32_t          TINYMT_STATE;
+SDL_Event           EVENT;
+struct Keys         KEYS;
+struct EnemyManager ENEMY_MANAGER;
+struct Particle     PARTICLES[PARTICLES_MAX];
+struct Score        SCORE;
+struct Text         WELCOME_TEXT;
+struct Text         HUD_TEXT;
+struct HUD          HUD;
+struct Text         PAUSE_TEXT;
+struct Game         GAME;
 
-int                      PLAYER_BULLET_IDX[PLAYER_MAX][BULLET_PER_PLAYER];
-
-
-tinymt32_t               TINYMT_STATE;
-struct Keys              KEYS;
-struct InputManager      INPUT_MANAGER;
-struct EnemyManager      ENEMY_MANAGER;
-struct Particle          PARTICLES[PARTICLES_MAX];
-struct ParticleManager   PARTICLE_MANAGER;
-struct Score             SCORE;
-struct CollisionManager  COLLISION_MANAGER;
-struct Text              WELCOME_TEXT;
-struct WelcomeState      WELCOME_STATE;
-struct Text              HUD_TEXT;
-struct HUD               HUD;
-struct InGameState       IN_GAME_STATE;
-struct Text              PAUSE_TEXT;
-struct PauseState        PAUSE_STATE;
-struct Game              GAME;
 
 
 // util.c start
@@ -224,18 +216,12 @@ float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
 // config.c end
 
 
-// bullet_manager.c start
-void bullet_manager_init(
-    int   idx,
-    float x,
-    float y,
-    int   w,
-    int   h,
-    int   v
-) {
+// bullet.c start
+void bullet_init(int idx, float x, float y, int w, int h, int v) {
     int eid   = BULLET_ENTITY_IDX[idx];
     int pid   = ENTITY_PHYSICS_IDX[eid];
     int gid   = ENTITY_GRAPHICS_IDX[eid];
+    int hid   = ENTITY_HEALTH_IDX[eid];
     int psrid = PHYSICS_SDL_RECT_IDX[pid];
     int gsrid = GRAPHICS_SDL_RECT_IDX[gid];
 
@@ -248,25 +234,26 @@ void bullet_manager_init(
     GRAPHICS_SDL_RECTS[gsrid].w = PHYSICS[pid].w;
     GRAPHICS_SDL_RECTS[gsrid].h = PHYSICS[pid].h;
 
-    bullet_manager_set_x(idx, x);
-    bullet_manager_set_y(idx, y);
+    bullet_set_x(idx, x);
+    bullet_set_y(idx, y);
 
     PHYSICS[pid].v = v;
 
-    PHYSICS[pid].alive = 0;
+    HEALTHS[hid].alive = 0;
 }
 
-float bullet_manager_get_x(int idx) {
+float bullet_get_x(int idx) {
     int eid = BULLET_ENTITY_IDX[idx];
     int pid = ENTITY_PHYSICS_IDX[eid];
 
     return PHYSICS[pid].x;
 }
 
-void bullet_manager_set_x(int   idx, float value) {
+void bullet_set_x(int idx, float value) {
     int eid   = BULLET_ENTITY_IDX[idx];
     int pid   = ENTITY_PHYSICS_IDX[eid];
     int gid   = ENTITY_GRAPHICS_IDX[eid];
+    int hid   = ENTITY_HEALTH_IDX[eid];
     int psrid = PHYSICS_SDL_RECT_IDX[pid];
     int gsrid = GRAPHICS_SDL_RECT_IDX[gid];
 
@@ -274,7 +261,12 @@ void bullet_manager_set_x(int   idx, float value) {
     float x_max = WINDOW_W + PHYSICS[pid].w + 1;
 
     if (value < x_min || value > x_max) {
-        PHYSICS[pid].alive = 0;
+        HEALTHS[hid].alive = 0;
+
+        value = 0;
+        PHYSICS[pid].x = 0;
+        PHYSICS[pid].y = 0;
+
         return;
     }
 
@@ -284,17 +276,18 @@ void bullet_manager_set_x(int   idx, float value) {
     GRAPHICS_SDL_RECTS[gsrid].x = floor(PHYSICS[pid].x - (PHYSICS[pid].w / 2));
 }
 
-float bullet_manager_get_y(int idx) {
+float bullet_get_y(int idx) {
     int eid = BULLET_ENTITY_IDX[idx];
     int pid = ENTITY_PHYSICS_IDX[eid];
 
     return PHYSICS[pid].y;
 }
 
-void bullet_manager_set_y(int   idx, float value) {
+void bullet_set_y(int idx, float value) {
     int eid   = BULLET_ENTITY_IDX[idx];
     int pid   = ENTITY_PHYSICS_IDX[eid];
     int gid   = ENTITY_GRAPHICS_IDX[eid];
+    int hid   = ENTITY_HEALTH_IDX[eid];
     int psrid = PHYSICS_SDL_RECT_IDX[pid];
     int gsrid = GRAPHICS_SDL_RECT_IDX[gid];
 
@@ -302,7 +295,12 @@ void bullet_manager_set_y(int   idx, float value) {
     float y_max = WINDOW_H + PHYSICS[pid].h + 1;
 
     if (value < y_min || value > y_max) {
-        PHYSICS[pid].alive = 0;
+        HEALTHS[hid].alive = 0;
+
+        value = 0;
+        PHYSICS[pid].x = 0;
+        PHYSICS[pid].y = 0;
+
         return;
     }
 
@@ -312,38 +310,29 @@ void bullet_manager_set_y(int   idx, float value) {
     GRAPHICS_SDL_RECTS[gsrid].y = floor(PHYSICS[pid].y - (PHYSICS[pid].h / 2));
 }
 
-void bullet_manager_update(int idx) {
+void bullet_update(int idx) {
     int eid  = BULLET_ENTITY_IDX[idx];
     int pid  = ENTITY_PHYSICS_IDX[eid];
 
     float x = PHYSICS[pid].x + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vx / UPDATES_PER_SECOND);
     float y = PHYSICS[pid].y + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vy / UPDATES_PER_SECOND);
 
-    bullet_manager_set_x(idx, x);
-    bullet_manager_set_y(idx, y);
+    bullet_set_x(idx, x);
+    bullet_set_y(idx, y);
 }
 
-void bullet_manager_render(int idx, SDL_Renderer *renderer) {
-    int eid  = BULLET_ENTITY_IDX[idx];
-    int gid  = ENTITY_GRAPHICS_IDX[eid];
-    int srid = GRAPHICS_SDL_RECT_IDX[gid];
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &GRAPHICS_SDL_RECTS[srid]);
-}
-
-void bullet_manager_init_all(int w, int h, int v) {
+void bullet_init_all(int w, int h, int v) {
     for (int i = 0; i < BULLET_MAX; i++) {
-        bullet_manager_init(i, 0, 0, w, h, v);
+        bullet_init(i, 0, 0, w, h, v);
     }
 }
 
-int bullet_manager_get_free() {
+int bullet_get_free() {
     for (int i = 0; i < BULLET_MAX; i++) {
         int eid = BULLET_ENTITY_IDX[i];
-        int pid = ENTITY_PHYSICS_IDX[eid];
+        int hid = ENTITY_HEALTH_IDX[eid];
 
-        if (PHYSICS[pid].alive == 1) {
+        if (HEALTHS[hid].alive == 1) {
             continue;
         }
 
@@ -353,46 +342,27 @@ int bullet_manager_get_free() {
     return -1;
 }
 
-void bullet_manager_update_all() {
+void bullet_update_all() {
     for (int i = 0; i < BULLET_MAX; i++) {
         int eid = BULLET_ENTITY_IDX[i];
-        int pid = ENTITY_PHYSICS_IDX[eid];
+        int hid = ENTITY_HEALTH_IDX[eid];
 
-        if (PHYSICS[pid].alive == 0) {
+        if (HEALTHS[hid].alive == 0) {
             continue;
         }
 
-        bullet_manager_update(i);
+        bullet_update(i);
     }
 }
-
-void bullet_manager_render_all(SDL_Renderer *renderer) {
-    for (int i = 0; i < BULLET_MAX; i++) {
-        int eid = BULLET_ENTITY_IDX[i];
-        int pid = ENTITY_PHYSICS_IDX[eid];
-
-        if (PHYSICS[pid].alive == 0) {
-            continue;
-        }
-
-        bullet_manager_render(i, renderer);
-    }
-}
-// bullet_manager.c end
+// bullet.c end
 
 
-// player_manager.c start
-void player_manager_init(
-    int   idx,
-    float x,
-    float y,
-    int   w,
-    int   h,
-    int   v
-) {
+// player.c start
+void player_init(int idx, float x, float y, int w, int h, int v) {
     int eid  = PLAYER_ENTITY_IDX[idx];
     int pid  = ENTITY_PHYSICS_IDX[eid];
     int gid  = ENTITY_GRAPHICS_IDX[eid];
+    int hid  = ENTITY_HEALTH_IDX[eid];
     int sid  = ENTITY_SHOOTING_IDX[eid];
     int psrid = PHYSICS_SDL_RECT_IDX[pid];
     int gsrid = GRAPHICS_SDL_RECT_IDX[gid];
@@ -406,18 +376,18 @@ void player_manager_init(
     GRAPHICS_SDL_RECTS[gsrid].w = PHYSICS[pid].w;
     GRAPHICS_SDL_RECTS[gsrid].h = PHYSICS[pid].h;
 
-    player_manager_set_x(idx, x);
-    player_manager_set_y(idx, y);
+    player_set_x(idx, x);
+    player_set_y(idx, y);
 
     PHYSICS[pid].v = v;
 
-    PHYSICS[pid].alive = 1;
+    HEALTHS[hid].alive = 1;
 
     SHOOTING[sid].bullets_n = PLAYER_BULLETS_INIT_N;
     SHOOTING[sid].fire_spacing = 128;
 }
 
-void player_manager_set_x(int idx, float value) {
+void player_set_x(int idx, float value) {
     int eid   = PLAYER_ENTITY_IDX[idx];
     int pid   = ENTITY_PHYSICS_IDX[eid];
     int gid   = ENTITY_GRAPHICS_IDX[eid];
@@ -439,7 +409,7 @@ void player_manager_set_x(int idx, float value) {
     GRAPHICS_SDL_RECTS[gsrid].x = floor(PHYSICS[pid].x - (PHYSICS[pid].w / 2));
 }
 
-void player_manager_set_y(int idx, float value) {
+void player_set_y(int idx, float value) {
     int eid   = PLAYER_ENTITY_IDX[idx];
     int pid   = ENTITY_PHYSICS_IDX[eid];
     int gid   = ENTITY_GRAPHICS_IDX[eid];
@@ -461,7 +431,7 @@ void player_manager_set_y(int idx, float value) {
     GRAPHICS_SDL_RECTS[gsrid].y = floor(PHYSICS[pid].y - (PHYSICS[pid].h / 2));
 }
 
-void player_manager_on_button_a_keydown(int idx) {
+void player_on_button_a_keydown(int idx) {
     int eid = PLAYER_ENTITY_IDX[idx];
     int sid = ENTITY_SHOOTING_IDX[eid];
 
@@ -469,7 +439,7 @@ void player_manager_on_button_a_keydown(int idx) {
     SHOOTING[sid].fire_time = SHOOTING[sid].fire_spacing * 1.0;
 }
 
-void player_manager_on_button_a_keyup(int idx) {
+void player_on_button_a_keyup(int idx) {
     int eid = PLAYER_ENTITY_IDX[idx];
     int sid = ENTITY_SHOOTING_IDX[eid];
 
@@ -477,13 +447,13 @@ void player_manager_on_button_a_keyup(int idx) {
     SHOOTING[sid].fire_time = 0.0;
 }
 
-void player_manager_fire(int idx) {
+void player_fire(int idx) {
     int eid = PLAYER_ENTITY_IDX[idx];
     int pid = ENTITY_PHYSICS_IDX[eid];
     int sid = ENTITY_SHOOTING_IDX[eid];
 
     for (int i = 0; i < SHOOTING[sid].bullets_n; i++) {
-        int bid = bullet_manager_get_free();
+        int bid = bullet_get_free();
 
         if (bid == -1) {
             return;
@@ -491,21 +461,22 @@ void player_manager_fire(int idx) {
 
         int beid = BULLET_ENTITY_IDX[bid];
         int bpid = ENTITY_PHYSICS_IDX[beid];
+        int bhid = ENTITY_HEALTH_IDX[beid];
 
-        PHYSICS[bpid].alive = 1;
+        HEALTHS[bhid].alive = 1;
 
         float x = PHYSICS[pid].x + PHYSICS[pid].w * PLAYER_BULLETS_OFFSET_X[i];
         float y = PHYSICS[pid].y + PHYSICS[pid].h * PLAYER_BULLETS_OFFSET_Y[i];
 
-        bullet_manager_set_x(bid, x);
-        bullet_manager_set_y(bid, y);
+        bullet_set_x(bid, x);
+        bullet_set_y(bid, y);
 
         PHYSICS[bpid].vx = PLAYER_BULLETS_VX;
         PHYSICS[bpid].vy = PLAYER_BULLETS_VY;
     }
 }
 
-void player_manager_update(int idx) {
+void player_update(int idx) {
     int eid = PLAYER_ENTITY_IDX[idx];
     int pid = ENTITY_PHYSICS_IDX[eid];
     int sid = ENTITY_SHOOTING_IDX[eid];
@@ -529,42 +500,40 @@ void player_manager_update(int idx) {
         PHYSICS[pid].vy = +1;
     }
 
-    player_manager_set_x(idx, PHYSICS[pid].x + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vx / UPDATES_PER_SECOND));
-    player_manager_set_y(idx, PHYSICS[pid].y + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vy / UPDATES_PER_SECOND));
+    player_set_x(idx, PHYSICS[pid].x + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vx / UPDATES_PER_SECOND));
+    player_set_y(idx, PHYSICS[pid].y + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vy / UPDATES_PER_SECOND));
 
     if (KEYS.z) {
         SHOOTING[sid].fire_time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
     }
 
     if (SHOOTING[sid].fire_time >= SHOOTING[sid].fire_spacing) {
-        player_manager_fire(idx);
+        player_fire(idx);
         SHOOTING[sid].fire_time = 0.0;
     }
 }
 
-void player_manager_render(int idx, SDL_Renderer  *renderer) {
-    int eid = PLAYER_ENTITY_IDX[idx];
-    int gid = ENTITY_GRAPHICS_IDX[eid];
-    int srid = GRAPHICS_SDL_RECT_IDX[gid];
+void player_update_all() {
+    for (int i = 0; i < PLAYER_MAX; i++) {
+        int eid = PLAYER_ENTITY_IDX[i];
+        int hid = ENTITY_HEALTH_IDX[eid];
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &GRAPHICS_SDL_RECTS[srid]);
+        if (HEALTHS[hid].alive == 0) {
+            continue;
+        }
+
+        player_update(i);
+    }
 }
-// player_manager.c end
+// player.c end
 
 
-// enemy_manager.c start
-void enemy_manager_init(
-    int   idx,
-    float x,
-    float y,
-    int   w,
-    int   h,
-    int   v
-) {
+// enemy.c start
+void enemy_init(int idx, float x, float y, int w, int h, int v) {
     int eid   = ENEMY_ENTITY_IDX[idx];
     int pid   = ENTITY_PHYSICS_IDX[eid];
     int gid   = ENTITY_GRAPHICS_IDX[eid];
+    int hid   = ENTITY_HEALTH_IDX[eid];
     int psrid = PHYSICS_SDL_RECT_IDX[pid];
     int gsrid = GRAPHICS_SDL_RECT_IDX[gid];
 
@@ -577,18 +546,19 @@ void enemy_manager_init(
     GRAPHICS_SDL_RECTS[gsrid].w = PHYSICS[pid].w;
     GRAPHICS_SDL_RECTS[gsrid].h = PHYSICS[pid].h;
 
-    enemy_manager_set_x(idx, x);
-    enemy_manager_set_y(idx, y);
+    enemy_set_x(idx, x);
+    enemy_set_y(idx, y);
 
     PHYSICS[pid].v = v;
 
-    PHYSICS[pid].alive = 0;
+    HEALTHS[hid].alive = 0;
 }
 
-void enemy_manager_set_x(int idx, float value) {
+void enemy_set_x(int idx, float value) {
     int eid   = ENEMY_ENTITY_IDX[idx];
     int pid   = ENTITY_PHYSICS_IDX[eid];
     int gid   = ENTITY_GRAPHICS_IDX[eid];
+    int hid   = ENTITY_HEALTH_IDX[eid];
     int psrid = PHYSICS_SDL_RECT_IDX[pid];
     int gsrid = GRAPHICS_SDL_RECT_IDX[gid];
 
@@ -596,7 +566,12 @@ void enemy_manager_set_x(int idx, float value) {
     float x_max = WINDOW_W + PHYSICS[pid].w + 1;
 
     if (value < x_min || value > x_max) {
-        PHYSICS[pid].alive = 0;
+        HEALTHS[hid].alive = 0;
+
+        value = 0;
+        PHYSICS[pid].x = 0;
+        PHYSICS[pid].y = 0;
+
         return;
     }
 
@@ -606,10 +581,11 @@ void enemy_manager_set_x(int idx, float value) {
     GRAPHICS_SDL_RECTS[gsrid].x = floor(PHYSICS[pid].x - (PHYSICS[pid].w / 2));
 }
 
-void enemy_manager_set_y(int idx, float value) {
+void enemy_set_y(int idx, float value) {
     int eid  = ENEMY_ENTITY_IDX[idx];
     int pid  = ENTITY_PHYSICS_IDX[eid];
     int gid  = ENTITY_GRAPHICS_IDX[eid];
+    int hid  = ENTITY_HEALTH_IDX[eid];
     int psrid = PHYSICS_SDL_RECT_IDX[pid];
     int gsrid = GRAPHICS_SDL_RECT_IDX[gid];
 
@@ -617,7 +593,12 @@ void enemy_manager_set_y(int idx, float value) {
     float y_max = WINDOW_H + PHYSICS[pid].h + 1;
 
     if (value < y_min || value > y_max) {
-        PHYSICS[pid].alive = 0;
+        HEALTHS[hid].alive = 0;
+
+        value = 0;
+        PHYSICS[pid].x = 0;
+        PHYSICS[pid].y = 0;
+
         return;
     }
 
@@ -627,46 +608,29 @@ void enemy_manager_set_y(int idx, float value) {
     GRAPHICS_SDL_RECTS[gsrid].y = floor(PHYSICS[pid].y - (PHYSICS[pid].h / 2));
 }
 
-void enemy_manager_update(int idx) {
+void enemy_update(int idx) {
     int eid = ENEMY_ENTITY_IDX[idx];
     int pid = ENTITY_PHYSICS_IDX[eid];
 
-    enemy_manager_set_x(idx, PHYSICS[pid].x + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vx / UPDATES_PER_SECOND));
-    enemy_manager_set_y(idx, PHYSICS[pid].y + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vy / UPDATES_PER_SECOND));
+    enemy_set_x(idx, PHYSICS[pid].x + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vx / UPDATES_PER_SECOND));
+    enemy_set_y(idx, PHYSICS[pid].y + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vy / UPDATES_PER_SECOND));
 }
 
-void enemy_manager_render(int idx, SDL_Renderer *renderer) {
-    int eid  = ENEMY_ENTITY_IDX[idx];
-    int gid  = ENTITY_GRAPHICS_IDX[eid];
-    int srid = GRAPHICS_SDL_RECT_IDX[gid];
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &GRAPHICS_SDL_RECTS[srid]);
-}
-
-void enemy_manager_init_all(
-    struct EnemyManager *self,
-    tinymt32_t          *rand_state,
-    int                 w,
-    int                 h,
-    int                 v
-) {
-    self->rand_state = rand_state;
-
-    self->time    = 0.0;
-    self->spacing = 100.0;
+void enemy_init_all(int w, int h, int v) {
+    ENEMY_MANAGER.time    = 0.0;
+    ENEMY_MANAGER.spacing = 100.0;
 
     for (int i = 0; i < ENEMIES_MAX; i++) {
-        enemy_manager_init(i, 0, 0, w, h, v);
+        enemy_init(i, 0, 0, w, h, v);
     }
 }
 
-int enemy_manager_get_free(struct EnemyManager *self) {
+int enemy_get_free() {
     for (int i = 0; i < ENEMIES_MAX; i++) {
         int eid = ENEMY_ENTITY_IDX[i];
-        int pid = ENTITY_PHYSICS_IDX[eid];
+        int hid = ENTITY_HEALTH_IDX[eid];
 
-        if (PHYSICS[pid].alive == 1) {
+        if (HEALTHS[hid].alive == 1) {
             continue;
         }
 
@@ -676,8 +640,8 @@ int enemy_manager_get_free(struct EnemyManager *self) {
     return -1;
 }
 
-void enemy_manager_spawn(struct EnemyManager *self) {
-    int idx = enemy_manager_get_free(self);
+void enemy_spawn() {
+    int idx = enemy_get_free();
 
     if (idx == -1) {
         return;
@@ -685,242 +649,196 @@ void enemy_manager_spawn(struct EnemyManager *self) {
 
     int eid = ENEMY_ENTITY_IDX[idx];
     int pid = ENTITY_PHYSICS_IDX[eid];
+    int hid = ENTITY_HEALTH_IDX[eid];
 
-    PHYSICS[pid].alive = 1;
+    HEALTHS[hid].alive = 1;
 
-    enemy_manager_set_x(idx, rand_n(self->rand_state, WINDOW_W + 1));
-    enemy_manager_set_y(idx, 0 - PHYSICS[pid].h);
+    enemy_set_x(idx, rand_n(&TINYMT_STATE, WINDOW_W + 1));
+    enemy_set_y(idx, 0 - PHYSICS[pid].h);
 
     PHYSICS[pid].vx = ENEMY_VX;
     PHYSICS[pid].vy = ENEMY_VY;
 }
 
-void enemy_manager_update_all(struct EnemyManager *self) {
+void enemy_update_all() {
     for (int i = 0; i < ENEMY_MAX; i++) {
         int eid = ENEMY_ENTITY_IDX[i];
-        int pid = ENTITY_PHYSICS_IDX[eid];
+        int hid = ENTITY_HEALTH_IDX[eid];
 
-        if (PHYSICS[pid].alive == 0) {
+        if (HEALTHS[hid].alive == 0) {
             continue;
         }
 
-        enemy_manager_update(i);
+        enemy_update(i);
     }
 
-    self->time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
+    ENEMY_MANAGER.time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
 
-    if (self->time >= self->spacing) {
-        enemy_manager_spawn(self);
-        self->time = 0.0;
-    }
-}
-
-void enemy_manager_render_all(SDL_Renderer *renderer) {
-    for (int i = 0; i < ENEMIES_MAX; i++) {
-        int eid = ENEMY_ENTITY_IDX[i];
-        int pid = ENTITY_PHYSICS_IDX[eid];
-
-        if (PHYSICS[pid].alive == 0) {
-            continue;
-        }
-
-        enemy_manager_render(i, renderer);
+    if (ENEMY_MANAGER.time >= ENEMY_MANAGER.spacing) {
+        enemy_spawn();
+        ENEMY_MANAGER.time = 0.0;
     }
 }
-// enemy_manager.c end
+// enemy.c end
 
 
 // particle.c start
-void particle_init(
-    struct Particle *self,
-    float           x,
-    float           y,
-    int             w,
-    int             h,
-    int             v
-) {
-    self->w = w;
-    self->h = h;
+void particle_init(int i, float x, float y, int w, int h, int v) {
+    PARTICLES[i].w = w;
+    PARTICLES[i].h = h;
 
-    self->rect.w = self->w;
-    self->rect.h = self->h;
+    PARTICLES[i].rect.w = PARTICLES[i].w;
+    PARTICLES[i].rect.h = PARTICLES[i].h;
 
-    particle_set_x(self, x);
-    particle_set_y(self, y);
+    particle_set_x(i, x);
+    particle_set_y(i, y);
 
-    self->v = v;
+    PARTICLES[i].v = v;
 
-    self->alive = 0;
+    PARTICLES[i].alive = 0;
 }
 
-void particle_set_x(struct Particle *self, float value) {
-    float x_min = 0 - self->w + 1;
-    float x_max = WINDOW_W + self->w + 1;
+void particle_set_x(int i, float value) {
+    float x_min = 0 - PARTICLES[i].w + 1;
+    float x_max = WINDOW_W + PARTICLES[i].w + 1;
 
     if (value < x_min || value > x_max) {
-        self->alive = 0;
+        PARTICLES[i].alive = 0;
         return;
     }
 
-    self->x = value;
+    PARTICLES[i].x = value;
 
-    self->rect.x = floor(self->x - (self->w / 2));
+    PARTICLES[i].rect.x = floor(PARTICLES[i].x - (PARTICLES[i].w / 2));
 }
 
-void particle_set_y(struct Particle *self, float value) {
-    float y_min = 0 - self->h - 1;
-    float y_max = WINDOW_H + self->h + 1;
+void particle_set_y(int i, float value) {
+    float y_min = 0 - PARTICLES[i].h - 1;
+    float y_max = WINDOW_H + PARTICLES[i].h + 1;
 
     if (value < y_min || value > y_max) {
-        self->alive = 0;
+        PARTICLES[i].alive = 0;
         return;
     }
 
-    self->y = value;
+    PARTICLES[i].y = value;
 
-    self->rect.y = floor(self->y - (self->h / 2));
+    PARTICLES[i].rect.y = floor(PARTICLES[i].y - (PARTICLES[i].h / 2));
 }
 
-void particle_update(struct Particle *self) {
-    particle_set_x(self, self->x + (1.0 * self->v * self->vx / UPDATES_PER_SECOND));
-    particle_set_y(self, self->y + (1.0 * self->v * self->vy / UPDATES_PER_SECOND));
+void particle_update(int i) {
+    particle_set_x(i, PARTICLES[i].x + (1.0 * PARTICLES[i].v * PARTICLES[i].vx / UPDATES_PER_SECOND));
+    particle_set_y(i, PARTICLES[i].y + (1.0 * PARTICLES[i].v * PARTICLES[i].vy / UPDATES_PER_SECOND));
 }
 
-void particle_render(struct Particle *self, SDL_Renderer *renderer) {
+void particle_render(int i, SDL_Renderer *renderer) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &self->rect);
+    SDL_RenderFillRect(renderer, &PARTICLES[i].rect);
+}
+
+void particle_init_all(int w, int h, int v) {
+    for (int i = 0; i < PARTICLES_MAX; i++) {
+        particle_init(i, 0, 0, w, h, v);
+    }
+}
+
+int particle_get_free() {
+    for (int i = 0; i < PARTICLES_MAX; i++) {
+        if (PARTICLES[i].alive == 1) {
+            continue;
+        }
+
+        return i;
+    }
+
+    return -1;
+}
+
+void particle_update_all() {
+    for (int i = 0; i < PARTICLES_MAX; i++) {
+        if (PARTICLES[i].alive == 0) {
+            continue;
+        }
+
+        particle_update(i);
+    }
+}
+
+void particle_render_all(SDL_Renderer *renderer) {
+    for (int i = 0; i < PARTICLES_MAX; i++) {
+        if (PARTICLES[i].alive == 0) {
+            continue;
+        }
+
+        particle_render(i, renderer);
+    }
 }
 // particle.c end
 
 
 // score.c start
-void score_init(struct Score *self) {
-    self->value = 0;
+void score_init() {
+    SCORE.value = 0;
 }
 // score.c end
 
 
-// particle_manager.c start
-void particle_manager_init(
-    struct ParticleManager *self,
-    struct Particle        *particles,
-    int                    n,
-    int                    w,
-    int                    h,
-    int                    v
-) {
-    self->particles = particles;
-    self->n         = n;
-
-    for (int i = 0; i < self->n; i++) {
-        particle_init(&self->particles[i], 0, 0, w, h, v);
-    }
-}
-
-struct Particle *particle_manager_get_free(struct ParticleManager *self) {
-    struct Particle *particle = NULL;
-
-    for (int i = 0; i < self->n; i++) {
-        if (self->particles[i].alive == 1) {
-            continue;
-        }
-
-        particle = &self->particles[i];
-
-        break;
-    }
-
-    return particle;
-}
-
-void particle_manager_update(struct ParticleManager *self) {
-    for (int i = 0; i < self->n; i++) {
-        if (self->particles[i].alive == 0) {
-            continue;
-        }
-
-        particle_update(&self->particles[i]);
-    }
-}
-
-void particle_manager_render(
-    struct ParticleManager *self,
-    SDL_Renderer           *renderer
-) {
-    for (int i = 0; i < self->n; i++) {
-        if (self->particles[i].alive == 0) {
-            continue;
-        }
-
-        particle_render(&self->particles[i], renderer);
-    }
-}
-// particle_manager.c end
-
-
-// collision_manager.c start
-void collision_manager_init(
-    struct CollisionManager *self,
-    struct ParticleManager  *particle_manager,
-    struct Score            *score
-) {
-    self->particle_manager = particle_manager;
-    self->score            = score;
-}
-
-void collision_manager_player_vs_enemies(struct CollisionManager *self) {
+// collision.c start
+void collision_player_vs_enemies() {
     int peid = PLAYER_ENTITY_IDX[0];
     int ppid = ENTITY_PHYSICS_IDX[peid];
+    int phid = ENTITY_HEALTH_IDX[peid];
     int psrid = PHYSICS_SDL_RECT_IDX[ppid];
 
-    if (PHYSICS[ppid].alive == 0) {
+    if (HEALTHS[phid].alive == 0) {
         return;
     }
 
     for (int i = 0; i < ENEMIES_MAX; i++) {
         int eeid = ENEMY_ENTITY_IDX[i];
         int epid = ENTITY_PHYSICS_IDX[eeid];
+        int ehid = ENTITY_HEALTH_IDX[eeid];
         int esrid = PHYSICS_SDL_RECT_IDX[epid];
 
-        if (PHYSICS[epid].alive == 0) {
+        if (HEALTHS[ehid].alive == 0) {
             continue;
         }
 
         if (SDL_HasIntersection(&PHYSICS_SDL_RECTS[psrid], &PHYSICS_SDL_RECTS[esrid]) == SDL_TRUE) {
-            PHYSICS[epid].alive = 0;
+            HEALTHS[ehid].alive = 0;
             continue;
         }
     }
 }
 
-void collision_manager_enemies_vs_player_bullets(
-    struct CollisionManager *self
-) {
+void collision_enemies_vs_player_bullets() {
     for (int i = 0; i < ENEMIES_MAX; i++) {
         int eeid = ENEMY_ENTITY_IDX[i];
         int epid = ENTITY_PHYSICS_IDX[eeid];
+        int ehid = ENTITY_HEALTH_IDX[eeid];
         int esrid = PHYSICS_SDL_RECT_IDX[epid];
 
-        if (PHYSICS[epid].alive == 0) {
+        if (HEALTHS[ehid].alive == 0) {
             continue;
         }
 
         for (int j = 0; j < BULLET_PER_PLAYER; j++) {
             int beid = BULLET_ENTITY_IDX[j];
             int bpid = ENTITY_PHYSICS_IDX[beid];
+            int bhid = ENTITY_HEALTH_IDX[beid];
             int bsrid = PHYSICS_SDL_RECT_IDX[bpid];
 
-            if (PHYSICS[bpid].alive == 0) {
+            if (HEALTHS[bhid].alive == 0) {
                 continue;
             }
 
             if (SDL_HasIntersection(&PHYSICS_SDL_RECTS[esrid], &PHYSICS_SDL_RECTS[bsrid]) == SDL_TRUE) {
-                PHYSICS[epid].alive = 0;
-                PHYSICS[bpid].alive = 0;
+                HEALTHS[ehid].alive = 0;
+                HEALTHS[bhid].alive = 0;
 
-                collision_manager_make_explosion(self, PHYSICS[epid].x, PHYSICS[epid].y);
+                collision_make_explosion(PHYSICS[epid].x, PHYSICS[epid].y);
 
-                self->score->value += ENEMY_SCORE;
+                SCORE.value += ENEMY_SCORE;
 
                 break;
             }
@@ -928,45 +846,38 @@ void collision_manager_enemies_vs_player_bullets(
     }
 }
 
-void collision_manager_update(struct CollisionManager *self) {
-    collision_manager_player_vs_enemies(self);
-    collision_manager_enemies_vs_player_bullets(self);
+void collision_update() {
+    collision_player_vs_enemies();
+    collision_enemies_vs_player_bullets();
 }
 
-void collision_manager_make_explosion(
-    struct CollisionManager *self,
-    float                   x,
-    float                   y
-) {
+void collision_make_explosion(float x, float y) {
     for (int i = 0; i < EXPLOSION_PARTICLES_N; i++) {
-        struct Particle *particle = particle_manager_get_free(self->particle_manager);
+        int idx = particle_get_free();
 
-        particle_set_x(particle, x);
-        particle_set_y(particle, y);
+        if (idx == -1) {
+            return;
+        }
 
-        particle->vx = EXPLOSION_PARTICLES_VX[i];
-        particle->vy = EXPLOSION_PARTICLES_VY[i];
+        particle_set_x(idx, x);
+        particle_set_y(idx, y);
 
-        particle->alive = 1;
+        PARTICLES[idx].vx = EXPLOSION_PARTICLES_VX[i];
+        PARTICLES[idx].vy = EXPLOSION_PARTICLES_VY[i];
+
+        PARTICLES[idx].alive = 1;
     }
 }
-// collision_manager.c end
+// collision.c end
 
 
 // welcome_state.c start
-void welcome_state_init(struct WelcomeState *self, struct Text *text) {
-    self->text = text;
-}
-
-void welcome_state_update(struct WelcomeState *self) {
+void welcome_state_update() {
 
 }
 
-void welcome_state_render(
-    struct WelcomeState *self,
-    SDL_Renderer        *renderer
-) {
-    text_render(self->text, renderer);
+void welcome_state_render(SDL_Renderer *renderer) {
+    text_render(&WELCOME_TEXT, renderer);
 }
 // welcome_state.c end
 
@@ -974,128 +885,92 @@ void welcome_state_render(
 // hud.c start
 char HUD_SCORE_TEXT[HUD_SCORE_TEXT_BUFSIZE];
 
-void hud_init(struct HUD *self, struct Score *score, struct Text *score_text) {
-    self->score      = score;
-    self->score_text = score_text;
+void hud_update() {
+    snprintf(HUD_SCORE_TEXT, HUD_SCORE_TEXT_BUFSIZE, "%lu", SCORE.value);
+
+    text_set_value(&HUD_TEXT, HUD_SCORE_TEXT);
 }
 
-void hud_update(struct HUD *self) {
-    snprintf(HUD_SCORE_TEXT, HUD_SCORE_TEXT_BUFSIZE, "%lu", self->score->value);
-
-    text_set_value(self->score_text, HUD_SCORE_TEXT);
-}
-
-void hud_render(struct HUD *self, SDL_Renderer *renderer) {
-    text_render(self->score_text, renderer);
+void hud_render(SDL_Renderer *renderer) {
+    text_render(&HUD_TEXT, renderer);
 }
 // hud.c end
 
 
 // in_game_state.c start
-void in_game_state_init(
-    struct InGameState      *self,
-    struct EnemyManager     *enemy_manager,
-    struct Particle         *particles,
-    struct ParticleManager  *particle_manager,
-    struct CollisionManager *collision_manager,
-    struct Score            *score,
-    struct HUD              *hud
-) {
-    self->enemy_manager         = enemy_manager;
-    self->particles             = particles;
-    self->particle_manager      = particle_manager;
-    self->collision_manager     = collision_manager;
-    self->score                 = score;
-    self->hud                   = hud;
+void in_game_state_update() {
+    player_update_all();
+    bullet_update_all();
+    enemy_update_all();
+    particle_update_all();
+    collision_update();
+    hud_update();
 }
 
-void in_game_state_update(struct InGameState *self) {
-    player_manager_update(0);
-    bullet_manager_update_all();
-    enemy_manager_update_all(self->enemy_manager);
-    particle_manager_update(self->particle_manager);
-    collision_manager_update(self->collision_manager);
-    hud_update(self->hud);
-}
+void in_game_state_render(SDL_Renderer *renderer) {
+    particle_render_all(renderer);
 
-void in_game_state_render(struct InGameState *self, SDL_Renderer *renderer) {
-    particle_manager_render(self->particle_manager, renderer);
-    bullet_manager_render_all(renderer);
-    enemy_manager_render_all(renderer);
-    player_manager_render(0, renderer);
-    hud_render(self->hud, renderer);
+    entity_render_all(renderer);
+
+    hud_render(renderer);
 }
 // in_game_state.c end
 
 
 // pause_state.c start
-void pause_state_init( struct PauseState *self, struct Text *text) {
-    self->text = text;
-}
-
-void pause_state_update(struct PauseState *self) {
+void pause_state_update() {
 
 }
 
-void pause_state_render( struct PauseState *self, SDL_Renderer *renderer) {
-    text_render(self->text, renderer);
+void pause_state_render(SDL_Renderer *renderer) {
+    particle_render_all(renderer);
+
+    entity_render_all(renderer);
+
+    hud_render(renderer);
+
+    text_render(&PAUSE_TEXT, renderer);
 }
 // pause_state.c end
 
 
 // game.c start
-void game_init(
-    struct Game         *self,
-    struct WelcomeState *welcome_state,
-    struct InGameState  *in_game_state,
-    struct PauseState   *pause_state
-) {
-    self->welcome_state = welcome_state;
-    self->in_game_state = in_game_state;
-    self->pause_state   = pause_state;
-
-    self->state = STATE_WELCOME;
+void game_init() {
+    GAME.state = STATE_WELCOME;
 }
 
-void game_set_input_manager(
-    struct Game           *self,
-    struct InputManager *input_manager
-) {
-    self->input_manager = input_manager;
-}
-
-void game_run(struct Game *self, SDL_Renderer *renderer) {
+void game_run(SDL_Renderer *renderer) {
     int keep_running = 1;
 
     Uint64 previous = SDL_GetPerformanceCounter();
     double lag = 0.0;
 
     while (keep_running) {
+        // -----
+        Uint64 debug_start = SDL_GetPerformanceCounter();
+        // -----
+
         Uint64 current = SDL_GetPerformanceCounter();
         double elapsed = performance_counters_to_ms(previous, current);
-
-        //SDL_Log("INFO: Frame time: %f ms.", elapsed);
 
         previous = current;
         lag += elapsed;
 
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
+        while (SDL_PollEvent(&EVENT)) {
+            if (EVENT.type == SDL_QUIT) {
                 keep_running = 0;
             }
 
-            input_manager_update(self->input_manager, &event);
+            input_update();
         }
 
         while (lag >= MS_PER_UPDATE) {
-            if (self->state == STATE_WELCOME) {
-                welcome_state_update(self->welcome_state);
-            } else if (self->state == STATE_IN_GAME) {
-                in_game_state_update(self->in_game_state);
-            } else if (self->state == STATE_PAUSE) {
-                pause_state_update(self->pause_state);
+            if (GAME.state == STATE_WELCOME) {
+                welcome_state_update();
+            } else if (GAME.state == STATE_IN_GAME) {
+                in_game_state_update();
+            } else if (GAME.state == STATE_PAUSE) {
+                pause_state_update();
             }
 
             lag -= MS_PER_UPDATE;
@@ -1106,15 +981,21 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // grey
         SDL_RenderClear(renderer);
 
-        if (self->state == STATE_WELCOME) {
-            welcome_state_render(self->welcome_state, renderer);
-        } else if (self->state == STATE_IN_GAME) {
-            in_game_state_render(self->in_game_state, renderer);
-        } else if (self->state == STATE_PAUSE) {
-            pause_state_render(self->pause_state, renderer);
+        if (GAME.state == STATE_WELCOME) {
+            welcome_state_render(renderer);
+        } else if (GAME.state == STATE_IN_GAME) {
+            in_game_state_render(renderer);
+        } else if (GAME.state == STATE_PAUSE) {
+            pause_state_render(renderer);
         }
 
         SDL_RenderPresent(renderer);
+
+        // -----
+        Uint64 debug_end = SDL_GetPerformanceCounter();
+        double debug_elapsed = performance_counters_to_ms(debug_start, debug_end);
+        SDL_Log("frame time: %f", debug_elapsed);
+        // -----
 
         //SDL_Delay(SLEEP_MS);
     }
@@ -1122,20 +1003,16 @@ void game_run(struct Game *self, SDL_Renderer *renderer) {
 // game.c end
 
 
-// input_manager.c start
-void input_manager_init( struct InputManager *self, struct Game *game) {
-    self->game   = game;
-}
-
-void input_manager_update(struct InputManager *self, SDL_Event *event) {
+// input.c start
+void input_update() {
     int sym;
 
-    if (event->type == SDL_KEYDOWN) {
-        if (event->key.repeat) {
+    if (EVENT.type == SDL_KEYDOWN) {
+        if (EVENT.key.repeat) {
             return;
         }
 
-        sym = event->key.keysym.sym;
+        sym = EVENT.key.keysym.sym;
 
         if (sym == SDLK_RIGHT) {
             KEYS.right = 1;
@@ -1148,16 +1025,16 @@ void input_manager_update(struct InputManager *self, SDL_Event *event) {
         } else if (sym == SDLK_z) {
             KEYS.z = 1;
 
-            if (self->game->state == STATE_IN_GAME) {
-                player_manager_on_button_a_keydown(0);
+            if (GAME.state == STATE_IN_GAME) {
+                player_on_button_a_keydown(0);
             }
         }
-    } else if (event->type == SDL_KEYUP) {
-        if (event->key.repeat) {
+    } else if (EVENT.type == SDL_KEYUP) {
+        if (EVENT.key.repeat) {
             return;
         }
 
-        sym = event->key.keysym.sym;
+        sym = EVENT.key.keysym.sym;
 
         if (sym == SDLK_RIGHT) {
             KEYS.right = 0;
@@ -1170,22 +1047,46 @@ void input_manager_update(struct InputManager *self, SDL_Event *event) {
         } else if (sym == SDLK_z) {
             KEYS.z = 0;
 
-            if (self->game->state == STATE_WELCOME) {
-                self->game->state = STATE_IN_GAME;
-            } else if (self->game->state == STATE_IN_GAME) {
-                player_manager_on_button_a_keyup(0);
+            if (GAME.state == STATE_WELCOME) {
+                GAME.state = STATE_IN_GAME;
+            } else if (GAME.state == STATE_IN_GAME) {
+                player_on_button_a_keyup(0);
             }
         } else if (sym == SDLK_ESCAPE) {
-            if (self->game->state == STATE_IN_GAME) {
-                self->game->state = STATE_PAUSE;
-            } else if (self->game->state == STATE_PAUSE) {
-                self->game->state = STATE_IN_GAME;
+            if (GAME.state == STATE_IN_GAME) {
+                GAME.state = STATE_PAUSE;
+            } else if (GAME.state == STATE_PAUSE) {
+                GAME.state = STATE_IN_GAME;
             }
         }
     }
 }
-// input_manager.c end
+// input.c end
 
+
+
+
+void entity_render_all(SDL_Renderer *renderer) {
+    int ret = 0;
+
+    for (int eid = 0; eid < ENTITY_MAX; eid++) {
+        int gid  = ENTITY_GRAPHICS_IDX[eid];
+        int hid  = ENTITY_HEALTH_IDX[eid];
+        int srid = GRAPHICS_SDL_RECT_IDX[gid];
+
+        if (HEALTHS[hid].alive == 0) {
+            continue;
+        }
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+
+        ret = SDL_RenderFillRect(renderer, &GRAPHICS_SDL_RECTS[srid]);
+
+        if (ret < 0) {
+            SDL_Log("ERROR: SDL_RenderFillRect() (%s)", SDL_GetError());
+        }
+    }
+}
 
 void init_physics_sdl_rect_idx() {
     int physics_sdl_rect_i = 0;
@@ -1225,7 +1126,11 @@ int main(void) {
         return 1;
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_Renderer *renderer = SDL_CreateRenderer(
+        window, -1,
+        //SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+        SDL_RENDERER_ACCELERATED
+    );
 
     if (renderer == NULL) {
         SDL_Log("ERROR: SDL_CreateRenderer() (%s)", SDL_GetError());
@@ -1239,21 +1144,24 @@ int main(void) {
     init_physics_sdl_rect_idx();
     init_graphics_sdl_rect_idx();
 
-    int physics_i             = 0;
-    int graphics_i            = 0;
-    int shooting_i            = 0;
-    int entity_i                        = 0;
+    int entity_i   = 0;
+    int physics_i  = 0;
+    int graphics_i = 0;
+    int health_i   = 0;
+    int shooting_i = 0;
 
     for (int i = 0; i < PLAYER_MAX; i++) {
         PLAYER_ENTITY_IDX[i] = entity_i;
 
         ENTITY_PHYSICS_IDX[entity_i]  = physics_i;
         ENTITY_GRAPHICS_IDX[entity_i] = graphics_i;
+        ENTITY_HEALTH_IDX[entity_i]   = health_i;
         ENTITY_SHOOTING_IDX[entity_i] = shooting_i;
         
         entity_i++;
         physics_i++;
         graphics_i++;
+        health_i++;
         shooting_i++;
     }
 
@@ -1262,11 +1170,13 @@ int main(void) {
 
         ENTITY_PHYSICS_IDX[entity_i]  = physics_i;
         ENTITY_GRAPHICS_IDX[entity_i] = graphics_i;
+        ENTITY_HEALTH_IDX[entity_i]   = health_i;
         ENTITY_SHOOTING_IDX[entity_i] = shooting_i;
 
         entity_i++;
         physics_i++;
         graphics_i++;
+        health_i++;
         shooting_i++;
     }
 
@@ -1275,11 +1185,13 @@ int main(void) {
 
         ENTITY_PHYSICS_IDX[entity_i]  = physics_i;
         ENTITY_GRAPHICS_IDX[entity_i] = graphics_i;
-        ENTITY_SHOOTING_IDX[entity_i] = shooting_i;
+        ENTITY_HEALTH_IDX[entity_i]   = health_i;
+        ENTITY_SHOOTING_IDX[entity_i] = -1;
 
         entity_i++;
         physics_i++;
         graphics_i++;
+        health_i++;
     }
 
     int bullet_i = 0;
@@ -1294,13 +1206,9 @@ int main(void) {
 
     rand_init(&TINYMT_STATE, time(NULL));
 
-    bullet_manager_init_all(
-        PLAYER_BULLETS_W,
-        PLAYER_BULLETS_H,
-        PLAYER_BULLETS_V
-    );
+    bullet_init_all(PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
 
-    player_manager_init(
+    player_init(
         0,
         WINDOW_W / 2,
         WINDOW_H / 2,
@@ -1309,26 +1217,15 @@ int main(void) {
         PLAYER_V
     );
 
-    enemy_manager_init_all(
-        &ENEMY_MANAGER,
-        &TINYMT_STATE,
+    enemy_init_all(
         ENEMY_WIDTH,
         ENEMY_HEIGHT,
         ENEMY_V
     );
 
-    particle_manager_init(
-        &PARTICLE_MANAGER,
-        PARTICLES,
-        PARTICLES_MAX,
-        PARTICLE_WIDTH,
-        PARTICLE_HEIGHT,
-        PARTICLE_V
-    );
+    particle_init_all(PARTICLE_WIDTH, PARTICLE_HEIGHT, PARTICLE_V);
 
-    score_init(&SCORE);
-
-    collision_manager_init(&COLLISION_MANAGER, &PARTICLE_MANAGER, &SCORE);
+    score_init();
 
     text_init(
         &HUD_TEXT,
@@ -1337,18 +1234,6 @@ int main(void) {
         TEXT_ALIGN_RIGHT,
         floor(WINDOW_W - WINDOW_W * 0.05),
         floor(0 + WINDOW_H * 0.05)
-    );
-
-    hud_init(&HUD, &SCORE, &HUD_TEXT);
-
-    in_game_state_init(
-        &IN_GAME_STATE,
-        &ENEMY_MANAGER,
-        PARTICLES,
-        &PARTICLE_MANAGER,
-        &COLLISION_MANAGER,
-        &SCORE,
-        &HUD
     );
 
     text_init(
@@ -1360,8 +1245,6 @@ int main(void) {
         floor(WINDOW_H / 2)
     );
 
-    pause_state_init(&PAUSE_STATE, &PAUSE_TEXT);
-
     text_init(
         &WELCOME_TEXT,
         "WAT",
@@ -1371,15 +1254,9 @@ int main(void) {
         floor(WINDOW_H / 2)
     );
 
-    welcome_state_init(&WELCOME_STATE, &WELCOME_TEXT);
+    game_init();
 
-    game_init(&GAME, &WELCOME_STATE, &IN_GAME_STATE, &PAUSE_STATE);
-
-    input_manager_init(&INPUT_MANAGER, &GAME);
-
-    game_set_input_manager(&GAME, &INPUT_MANAGER);
-
-    game_run(&GAME, renderer);
+    game_run(renderer);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

@@ -10,22 +10,24 @@
 // wat_dod.h start
 #define PLAYER_MAX                   1
 #define BULLET_PER_PLAYER            128
-#define BULLET_MAX                   PLAYER_MAX * BULLET_PER_PLAYER
+#define BULLET_MAX                   (PLAYER_MAX * BULLET_PER_PLAYER)
 #define ENEMY_MAX                    16
-#define ENTITY_MAX                   PLAYER_MAX + BULLET_MAX + ENEMY_MAX
+#define ENTITY_MAX                   (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
 
 #define PHYSICS_SDL_RECT_PER_PLAYER  1
 #define PHYSICS_SDL_RECT_PER_BULLET  1
 #define PHYSICS_SDL_RECT_PER_ENEMY   1
-#define PHYSICS_MAX                  PLAYER_MAX + BULLET_MAX + ENEMY_MAX
-#define PHYSICS_SDL_RECT_MAX         (PLAYER_MAX * PHYSICS_SDL_RECT_PER_PLAYER) + (BULLET_MAX * PHYSICS_SDL_RECT_PER_BULLET) + (ENEMY_MAX + PHYSICS_SDL_RECT_PER_ENEMY)
+#define PHYSICS_MAX                  (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+#define PHYSICS_SDL_RECT_MAX         ((PLAYER_MAX * PHYSICS_SDL_RECT_PER_PLAYER) + (BULLET_MAX * PHYSICS_SDL_RECT_PER_BULLET) + (ENEMY_MAX + PHYSICS_SDL_RECT_PER_ENEMY))
 #define PHYSICS_SDL_RECT_PER_ENTITY  1
+
+#define HEALTH_MAX                   (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
 
 #define GRAPHICS_SDL_RECT_PER_PLAYER 1
 #define GRAPHICS_SDL_RECT_PER_BULLET 1
 #define GRAPHICS_SDL_RECT_PER_ENEMY  1
-#define GRAPHICS_MAX                 PLAYER_MAX + BULLET_MAX + ENEMY_MAX
-#define GRAPHICS_SDL_RECT_MAX        (PLAYER_MAX * GRAPHICS_SDL_RECT_PER_PLAYER) + (BULLET_MAX * GRAPHICS_SDL_RECT_PER_BULLET) + (ENEMY_MAX * GRAPHICS_SDL_RECT_PER_ENEMY)
+#define GRAPHICS_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+#define GRAPHICS_SDL_RECT_MAX        ((PLAYER_MAX * GRAPHICS_SDL_RECT_PER_PLAYER) + (BULLET_MAX * GRAPHICS_SDL_RECT_PER_BULLET) + (ENEMY_MAX * GRAPHICS_SDL_RECT_PER_ENEMY))
 #define GRAPHICS_SDL_RECT_PER_ENTITY 1
 
 #define SHOOTING_MAX                 PLAYER_MAX
@@ -39,7 +41,6 @@ struct PhysicsComponent {
     int   v;
     int   vx;
     int   vy;
-    int   alive;
 };
 
 struct GraphicsComponent {
@@ -56,7 +57,8 @@ struct ShootingComponent {
     float fire_time; 
 };
 
-struct Entity {
+struct HealthComponent {
+    int alive;
 };
 // wat_dod.h end
 
@@ -183,31 +185,29 @@ extern float EXPLOSION_PARTICLES_VY[4];
 // config.h end
 
 
-// bullet_manager.h start
-void bullet_manager_init(
-    int   index,
-    float x,
-    float y,
-    int   w,
-    int   h,
-    int   v
-);
+// bullet.h start
+void bullet_init(int index, float x, float y, int w, int h, int v);
 
-float bullet_manager_get_x(int index);
-void bullet_manager_set_x(int index, float value);
-float bullet_manager_get_y(int index);
-void bullet_manager_set_y(int index, float value);
-void bullet_manager_update(int index);
-void bullet_manager_render(int index, SDL_Renderer *renderer);
-void bullet_manager_init_all(int w, int h, int v);
-int bullet_manager_get_free();
-void bullet_manager_update_all();
-void bullet_manager_render_all(SDL_Renderer *renderer);
-// bullet_manager.h end
+void bullet_init_all(int w, int h, int v);
+
+float bullet_get_x(int index);
+
+void bullet_set_x(int index, float value);
+
+float bullet_get_y(int index);
+
+void bullet_set_y(int index, float value);
+
+int bullet_get_free();
+
+void bullet_update(int index);
+
+void bullet_update_all();
+// bullet.h end
 
 
-// player_manager.h start
-void player_manager_init(
+// player.h start
+void player_init(
     int    index,
     float  x,
     float  y,
@@ -216,51 +216,36 @@ void player_manager_init(
     int    v
 );
 
-void player_manager_set_x(int index, float value);
-void player_manager_set_y(int index, float value);
-void player_manager_on_button_a_keydown(int index);
-void player_manager_on_button_a_keyup(int index);
-void player_manager_fire(int index);
-void player_manager_update(int index);
-// player_manager.h end
+void player_set_x(int index, float value);
+void player_set_y(int index, float value);
+void player_on_button_a_keydown(int index);
+void player_on_button_a_keyup(int index);
+void player_fire(int index);
+
+void player_update(int index);
+void player_update_all();
+// player.h end
 
 
-// enemy_manager.h start
+// enemy.h start
 struct EnemyManager {
-    tinymt32_t   *rand_state;
-    struct Enemy *enemies;
-    int          n;
     float        time;
     float        spacing;
 };
 
-void enemy_manager_init(
-    int   idx,
-    float x,
-    float y,
-    int   w,
-    int   h,
-    int   v
-);
+void enemy_init(int idx, float x, float y, int w, int h, int v);
+void enemy_init_all(int w, int h, int v);
 
-void enemy_manager_set_x(int idx, float value);
-void enemy_manager_set_y(int idx, float value);
-void enemy_manager_update(int idx);
-void enemy_manager_render(int idx, SDL_Renderer *renderer);
+void enemy_set_x(int idx, float value);
+void enemy_set_y(int idx, float value);
 
-void enemy_manager_init_all(
-    struct EnemyManager *self,
-    tinymt32_t          *rand_state,
-    int                 w,
-    int                 h,
-    int                 v
-);
 
-int enemy_manager_get_free(struct EnemyManager *self);
-void enemy_manager_spawn(struct EnemyManager *self);
-void enemy_manager_update_all(struct EnemyManager *self);
-void enemy_manager_render_all(SDL_Renderer *renderer);
-// enemy_manager.h end
+int enemy_get_free();
+void enemy_spawn();
+
+void enemy_update(int idx);
+void enemy_update_all();
+// enemy.h end
 
 
 // particle.h start
@@ -276,19 +261,23 @@ struct Particle {
     SDL_Rect rect;
 };
 
-void particle_init(
-    struct Particle *self,
-    float  x,
-    float  y,
-    int    w,
-    int    h,
-    int    v
-);
+void particle_init(int i, float x, float y, int w, int h, int v);
 
-void particle_set_x(struct Particle *self, float value);
-void particle_set_y(struct Particle *self, float value);
-void particle_update(struct Particle *self);
-void particle_render(struct Particle *self, SDL_Renderer *renderer);
+void particle_init_all(int w, int h, int v);
+
+void particle_set_x(int i, float value);
+
+void particle_set_y(int i, float value);
+
+int particle_get_free();
+
+void particle_update(int i);
+
+void particle_update_all();
+
+void particle_render(int i, SDL_Renderer *renderer);
+
+void particle_render_all(SDL_Renderer *renderer);
 // particle.h end
 
 
@@ -297,73 +286,23 @@ struct Score {
     unsigned long value;
 };
 
-void score_init(struct Score *self);
+void score_init();
 // score.h end
 
 
-// particle_manager.h start
-struct ParticleManager {
-    struct Particle *particles;
-    int             n;
-};
+// collision.h start
+void collision_player_vs_enemies();
+void collision_enemies_vs_player_bullets();
 
-void particle_manager_init(
-    struct ParticleManager *self,
-    struct Particle        *particles,
-    int                    n,
-    int                    w,
-    int                    h,
-    int                    v
-);
+void collision_make_explosion(float x, float y);
 
-struct Particle *particle_manager_get_free(struct ParticleManager *self);
-void particle_manager_update(struct ParticleManager *self);
-
-void particle_manager_render(
-    struct ParticleManager *self,
-    SDL_Renderer           *renderer
-);
-// particle_manager.h end
-
-
-// collision_manager.h start
-struct CollisionManager {
-    struct ParticleManager *particle_manager;
-    struct Player          *player;
-    struct Bullet          *player_bullets;
-    int                    bullets_n;
-    struct Enemy           *enemies;
-    int                    enemies_n;
-    struct Score           *score;
-};
-
-void collision_manager_init(
-    struct CollisionManager *self,
-    struct ParticleManager  *particle_manager,
-    struct Score            *score
-);
-
-void collision_manager_player_vs_enemies(struct CollisionManager *self);
-void collision_manager_enemies_vs_player_bullets(struct CollisionManager *self);
-
-void collision_manager_make_explosion(
-    struct CollisionManager *self,
-    float                   x,
-    float                   y
-);
-
-void collision_manager_update( struct CollisionManager *self);
-// collision_manager.h end
+void collision_update();
+// collision.h end
 
 
 // welcome_state.h start
-struct WelcomeState {
-    struct Text *text;
-};
-
-void welcome_state_init(struct WelcomeState *self, struct Text *text);
-void welcome_state_update(struct WelcomeState *self);
-void welcome_state_render(struct WelcomeState *self, SDL_Renderer *renderer);
+void welcome_state_update();
+void welcome_state_render(SDL_Renderer *renderer);
 // welcome_state.h end
 
 
@@ -375,80 +314,39 @@ struct HUD {
     struct Text  *score_text;
 };
 
-void hud_init(struct HUD *self, struct Score *score, struct Text *score_text);
-void hud_update(struct HUD *self);
-void hud_render(struct HUD *self, SDL_Renderer *renderer);
+void hud_update();
+void hud_render(SDL_Renderer *renderer);
 // hud.h end
 
 
 // in_game_state.h start
-struct InGameState {
-    struct EnemyManager     *enemy_manager;
-    struct Particle         *particles;
-    struct ParticleManager  *particle_manager;
-    struct CollisionManager *collision_manager;
-    struct Score            *score;
-    struct HUD              *hud;
-};
-
-void in_game_state_init(
-    struct InGameState      *self,
-    struct EnemyManager     *enemy_manager,
-    struct Particle         *particles,
-    struct ParticleManager  *particle_manager,
-    struct CollisionManager *collision_manager,
-    struct Score            *score,
-    struct HUD              *hud
-);
-
-void in_game_state_update(struct InGameState *self);
-void in_game_state_render(struct InGameState *self, SDL_Renderer *renderer);
+void in_game_state_update();
+void in_game_state_render(SDL_Renderer *renderer);
 // in_game_state.h end
 
 
 // pause_state.h start
-struct PauseState {
-    struct Text *text;
-};
-
-void pause_state_init(struct PauseState *self, struct Text *text);
-void pause_state_update(struct PauseState *self);
-void pause_state_render(struct PauseState *self, SDL_Renderer *renderer);
+void pause_state_update();
+void pause_state_render(SDL_Renderer *renderer);
 // pause_state.h end
 
 
 // game.h start
 struct Game {
-    struct InputManager *input_manager;
-    struct WelcomeState   *welcome_state;
-    struct InGameState    *in_game_state;
-    struct PauseState     *pause_state;
-    int                   state;
+    int state;
 };
 
-void game_init(
-    struct Game         *self,
-    struct WelcomeState *welcome_state,
-    struct InGameState  *in_game_state,
-    struct PauseState   *pause_state
-);
+void game_init();
 
-void game_set_input_manager(
-    struct Game           *self,
-    struct InputManager *input_manager
-);
-
-void game_run(struct Game  *self, SDL_Renderer *renderer);
+void game_run(SDL_Renderer *renderer);
 // game.h end
 
 
-// input_manager.h start
-struct InputManager {
-    struct Game   *game;
-};
+// input.h start
+void input_update();
+// input.h end
 
-void input_manager_init(struct InputManager *self, struct Game *game);
-void input_manager_update(struct InputManager *self, SDL_Event *event);
-// input_manager.h end
+
+void entity_render_all(SDL_Renderer *renderer);
 
 #endif

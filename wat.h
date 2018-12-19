@@ -127,7 +127,7 @@ void text_render(struct Text *self, SDL_Renderer *renderer);
 
 
 // keys.h start
-struct Keys {
+struct Keyboard {
     int left;
     int right;
     int up;

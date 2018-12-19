@@ -21,7 +21,7 @@ int PLAYER_BULLET_IDX[PLAYER_MAX][BULLET_PER_PLAYER];
 
 tinymt32_t          TINYMT_STATE;
 SDL_Event           EVENT;
-struct Keys         KEYS;
+struct Keyboard     KEYBOARD;
 struct EnemyManager ENEMY_MANAGER;
 struct Particle     PARTICLES[PARTICLES_MAX];
 struct Score        SCORE;
@@ -484,26 +484,26 @@ void player_update(int idx) {
     PHYSICS[pid].vx = 0;
     PHYSICS[pid].vy = 0;
 
-    if (KEYS.right) {
+    if (KEYBOARD.right) {
         PHYSICS[pid].vx = +1;
     }
 
-    if (KEYS.left) {
+    if (KEYBOARD.left) {
         PHYSICS[pid].vx = -1;
     }
 
-    if (KEYS.up) {
+    if (KEYBOARD.up) {
         PHYSICS[pid].vy = -1;
     }
 
-    if (KEYS.down) {
+    if (KEYBOARD.down) {
         PHYSICS[pid].vy = +1;
     }
 
     player_set_x(idx, PHYSICS[pid].x + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vx / UPDATES_PER_SECOND));
     player_set_y(idx, PHYSICS[pid].y + (1.0 * PHYSICS[pid].v * PHYSICS[pid].vy / UPDATES_PER_SECOND));
 
-    if (KEYS.z) {
+    if (KEYBOARD.z) {
         SHOOTING[sid].fire_time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
     }
 
@@ -994,7 +994,7 @@ void game_run(SDL_Renderer *renderer) {
         // -----
         Uint64 debug_end = SDL_GetPerformanceCounter();
         double debug_elapsed = performance_counters_to_ms(debug_start, debug_end);
-        SDL_Log("frame time: %f", debug_elapsed);
+        SDL_Log("frame time: %f ms", debug_elapsed);
         // -----
 
         //SDL_Delay(SLEEP_MS);
@@ -1015,15 +1015,15 @@ void input_update() {
         sym = EVENT.key.keysym.sym;
 
         if (sym == SDLK_RIGHT) {
-            KEYS.right = 1;
+            KEYBOARD.right = 1;
         } else if (sym == SDLK_LEFT) {
-            KEYS.left = 1;
+            KEYBOARD.left = 1;
         } else if (sym == SDLK_UP) {
-            KEYS.up = 1;
+            KEYBOARD.up = 1;
         } else if (sym == SDLK_DOWN) {
-            KEYS.down = 1;
+            KEYBOARD.down = 1;
         } else if (sym == SDLK_z) {
-            KEYS.z = 1;
+            KEYBOARD.z = 1;
 
             if (GAME.state == STATE_IN_GAME) {
                 player_on_button_a_keydown(0);
@@ -1037,15 +1037,15 @@ void input_update() {
         sym = EVENT.key.keysym.sym;
 
         if (sym == SDLK_RIGHT) {
-            KEYS.right = 0;
+            KEYBOARD.right = 0;
         } else if (sym == SDLK_LEFT) {
-            KEYS.left = 0;
+            KEYBOARD.left = 0;
         } else if (sym == SDLK_UP) {
-            KEYS.up = 0;
+            KEYBOARD.up = 0;
         } else if (sym == SDLK_DOWN) {
-            KEYS.down = 0;
+            KEYBOARD.down = 0;
         } else if (sym == SDLK_z) {
-            KEYS.z = 0;
+            KEYBOARD.z = 0;
 
             if (GAME.state == STATE_WELCOME) {
                 GAME.state = STATE_IN_GAME;

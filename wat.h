@@ -14,26 +14,26 @@
 #define ENEMY_MAX                    16
 #define ENTITY_MAX                   (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
 
-#define PHYSICS_SDL_RECT_PER_PLAYER  1
-#define PHYSICS_SDL_RECT_PER_BULLET  1
-#define PHYSICS_SDL_RECT_PER_ENEMY   1
-#define PHYSICS_MAX                  (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
-#define PHYSICS_SDL_RECT_MAX         ((PLAYER_MAX * PHYSICS_SDL_RECT_PER_PLAYER) + (BULLET_MAX * PHYSICS_SDL_RECT_PER_BULLET) + (ENEMY_MAX + PHYSICS_SDL_RECT_PER_ENEMY))
-#define PHYSICS_SDL_RECT_PER_ENTITY  1
+#define POSITION_SDL_RECT_PER_PLAYER  1
+#define POSITION_SDL_RECT_PER_BULLET  1
+#define POSITION_SDL_RECT_PER_ENEMY   1
+#define POSITION_MAX                  (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+#define POSITION_SDL_RECT_MAX         ((PLAYER_MAX * POSITION_SDL_RECT_PER_PLAYER) + (BULLET_MAX * POSITION_SDL_RECT_PER_BULLET) + (ENEMY_MAX + POSITION_SDL_RECT_PER_ENEMY))
+#define POSITION_SDL_RECT_PER_ENTITY  1
 
 #define HEALTH_MAX                   (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
 
-#define GRAPHICS_SDL_RECT_PER_PLAYER 1
-#define GRAPHICS_SDL_RECT_PER_BULLET 1
-#define GRAPHICS_SDL_RECT_PER_ENEMY  1
-#define GRAPHICS_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
-#define GRAPHICS_SDL_RECT_MAX        ((PLAYER_MAX * GRAPHICS_SDL_RECT_PER_PLAYER) + (BULLET_MAX * GRAPHICS_SDL_RECT_PER_BULLET) + (ENEMY_MAX * GRAPHICS_SDL_RECT_PER_ENEMY))
-#define GRAPHICS_SDL_RECT_PER_ENTITY 1
+#define RENDER_SDL_RECT_PER_PLAYER 1
+#define RENDER_SDL_RECT_PER_BULLET 1
+#define RENDER_SDL_RECT_PER_ENEMY  1
+#define RENDER_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+#define RENDER_SDL_RECT_MAX        ((PLAYER_MAX * RENDER_SDL_RECT_PER_PLAYER) + (BULLET_MAX * RENDER_SDL_RECT_PER_BULLET) + (ENEMY_MAX * RENDER_SDL_RECT_PER_ENEMY))
+#define RENDER_SDL_RECT_PER_ENTITY 1
 
 #define SHOOTING_MAX                 PLAYER_MAX
 
 
-struct PhysicsComponent {
+struct PositionComponent {
     float x;
     float y;
     int   w;
@@ -43,7 +43,7 @@ struct PhysicsComponent {
     int   vy;
 };
 
-struct GraphicsComponent {
+struct RenderComponent {
     float x;
     float y;
     int   w;
@@ -55,6 +55,10 @@ struct ShootingComponent {
     int   firing;
     int   fire_spacing;
     float fire_time; 
+};
+
+struct CollisionComponent {
+
 };
 
 struct HealthComponent {
@@ -223,7 +227,9 @@ void player_on_button_a_keyup(int index);
 void player_fire(int index);
 
 void player_update(int index);
+void player_fire_update(int index);
 void player_update_all();
+void player_fire_update_all();
 // player.h end
 
 
@@ -241,6 +247,7 @@ void enemy_set_y(int idx, float value);
 
 
 int enemy_get_free();
+void enemy_try_spawn();
 void enemy_spawn();
 
 void enemy_update(int idx);

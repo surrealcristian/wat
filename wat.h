@@ -168,7 +168,7 @@ struct Keyboard {
 #define ENEMY_VX +0
 #define ENEMY_VY +1
 
-#define PARTICLES_MAX 128
+#define PARTICLE_MAX 128
 #define PARTICLE_WIDTH 8
 #define PARTICLE_HEIGHT 8
 #define PARTICLE_V 1024
@@ -249,18 +249,6 @@ void enemy_update_all();
 
 
 // particle.h start
-struct Particle {
-    float    x;
-    float    y;
-    int      w;
-    int      h;
-    int      v;
-    int      vx;
-    int      vy;
-    int      alive;
-    SDL_Rect rect;
-};
-
 void particle_init(int i, float x, float y, int w, int h, int v);
 
 void particle_init_all(int w, int h, int v);

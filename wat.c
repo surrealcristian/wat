@@ -1,5 +1,7 @@
 #include "wat.h"
 
+// entity
+
 struct PhysicsComponent  PHYSICS[PHYSICS_MAX];
 struct GraphicsComponent GRAPHICS[GRAPHICS_MAX];
 struct HealthComponent   HEALTHS[HEALTH_MAX];
@@ -19,11 +21,29 @@ int ENEMY_ENTITY_IDX[ENEMY_MAX];
 int BULLET_ENTITY_IDX[BULLET_MAX];
 int PLAYER_BULLET_IDX[PLAYER_MAX][BULLET_PER_PLAYER];
 
+
+// particle
+
+struct PhysicsComponent  PARTICLE_PHYSICS[PARTICLE_MAX];
+struct GraphicsComponent PARTICLE_GRAPHICS[PARTICLE_MAX];
+struct HealthComponent   PARTICLE_HEALTHS[PARTICLE_MAX];
+
+SDL_Rect PARTICLE_PHYSICS_SDL_RECTS[PARTICLE_MAX];
+SDL_Rect PARTICLE_GRAPHICS_SDL_RECTS[PARTICLE_MAX];
+
+int PARTICLE_PHYSICS_SDL_RECT_IDX[PARTICLE_MAX];
+int PARTICLE_GRAPHICS_SDL_RECT_IDX[PARTICLE_MAX];
+int PARTICLE_PHYSICS_IDX[PARTICLE_MAX];
+int PARTICLE_GRAPHICS_IDX[PARTICLE_MAX];
+int PARTICLE_HEALTH_IDX[PARTICLE_MAX];
+
+
+// others
+
 tinymt32_t          TINYMT_STATE;
 SDL_Event           EVENT;
 struct Keyboard     KEYBOARD;
 struct EnemyManager ENEMY_MANAGER;
-struct Particle     PARTICLES[PARTICLES_MAX];
 struct Score        SCORE;
 struct Text         WELCOME_TEXT;
 struct Text         HUD_TEXT;
@@ -684,67 +704,97 @@ void enemy_update_all() {
 
 // particle.c start
 void particle_init(int i, float x, float y, int w, int h, int v) {
-    PARTICLES[i].w = w;
-    PARTICLES[i].h = h;
+    int pid   = PARTICLE_PHYSICS_IDX[i];
+    int gid   = PARTICLE_GRAPHICS_IDX[i];
+    int hid   = PARTICLE_HEALTH_IDX[i];
+    int psrid = PARTICLE_PHYSICS_SDL_RECT_IDX[pid];
+    int gsrid = PARTICLE_GRAPHICS_SDL_RECT_IDX[gid];
 
-    PARTICLES[i].rect.w = PARTICLES[i].w;
-    PARTICLES[i].rect.h = PARTICLES[i].h;
+    PARTICLE_PHYSICS[pid].w = w;
+    PARTICLE_PHYSICS[pid].h = h;
+
+    PARTICLE_PHYSICS_SDL_RECTS[psrid].w = PARTICLE_PHYSICS[pid].w;
+    PARTICLE_PHYSICS_SDL_RECTS[psrid].h = PARTICLE_PHYSICS[pid].h;
+
+    PARTICLE_GRAPHICS_SDL_RECTS[gsrid].w = PARTICLE_PHYSICS[pid].w;
+    PARTICLE_GRAPHICS_SDL_RECTS[gsrid].h = PARTICLE_PHYSICS[pid].h;
 
     particle_set_x(i, x);
     particle_set_y(i, y);
 
-    PARTICLES[i].v = v;
+    PARTICLE_PHYSICS[pid].v = v;
 
-    PARTICLES[i].alive = 0;
+    PARTICLE_HEALTHS[hid].alive = 0;
 }
 
 void particle_set_x(int i, float value) {
-    float x_min = 0 - PARTICLES[i].w + 1;
-    float x_max = WINDOW_W + PARTICLES[i].w + 1;
+    int pid   = PARTICLE_PHYSICS_IDX[i];
+    int gid   = PARTICLE_GRAPHICS_IDX[i];
+    int hid   = PARTICLE_HEALTH_IDX[i];
+    int psrid = PARTICLE_PHYSICS_SDL_RECT_IDX[pid];
+    int gsrid = PARTICLE_GRAPHICS_SDL_RECT_IDX[gid];
+
+    float x_min = 0 - PARTICLE_PHYSICS[pid].w + 1;
+    float x_max = WINDOW_W + PARTICLE_PHYSICS[pid].w + 1;
 
     if (value < x_min || value > x_max) {
-        PARTICLES[i].alive = 0;
+        PARTICLE_HEALTHS[hid].alive = 0;
         return;
     }
 
-    PARTICLES[i].x = value;
+    PARTICLE_PHYSICS[pid].x = value;
 
-    PARTICLES[i].rect.x = floor(PARTICLES[i].x - (PARTICLES[i].w / 2));
+    PARTICLE_PHYSICS_SDL_RECTS[psrid].x  = floor(PARTICLE_PHYSICS[pid].x - (PARTICLE_PHYSICS[pid].w / 2));
+    PARTICLE_GRAPHICS_SDL_RECTS[gsrid].x = floor(PARTICLE_PHYSICS[pid].x - (PARTICLE_PHYSICS[pid].w / 2));
 }
 
 void particle_set_y(int i, float value) {
-    float y_min = 0 - PARTICLES[i].h - 1;
-    float y_max = WINDOW_H + PARTICLES[i].h + 1;
+    int pid = PARTICLE_PHYSICS_IDX[i];
+    int gid = PARTICLE_GRAPHICS_IDX[i];
+    int hid = PARTICLE_HEALTH_IDX[i];
+    int psrid = PARTICLE_PHYSICS_SDL_RECT_IDX[pid];
+    int gsrid = PARTICLE_GRAPHICS_SDL_RECT_IDX[gid];
+
+    float y_min = 0 - PARTICLE_PHYSICS[pid].h - 1;
+    float y_max = WINDOW_H + PARTICLE_PHYSICS[pid].h + 1;
 
     if (value < y_min || value > y_max) {
-        PARTICLES[i].alive = 0;
+        PARTICLE_HEALTHS[hid].alive = 0;
         return;
     }
 
-    PARTICLES[i].y = value;
+    PARTICLE_PHYSICS[pid].y = value;
 
-    PARTICLES[i].rect.y = floor(PARTICLES[i].y - (PARTICLES[i].h / 2));
+    PARTICLE_PHYSICS_SDL_RECTS[psrid].y  = floor(PARTICLE_PHYSICS[pid].y - (PARTICLE_PHYSICS[pid].h / 2));
+    PARTICLE_GRAPHICS_SDL_RECTS[gsrid].y = floor(PARTICLE_PHYSICS[pid].y - (PARTICLE_PHYSICS[pid].h / 2));
 }
 
 void particle_update(int i) {
-    particle_set_x(i, PARTICLES[i].x + (1.0 * PARTICLES[i].v * PARTICLES[i].vx / UPDATES_PER_SECOND));
-    particle_set_y(i, PARTICLES[i].y + (1.0 * PARTICLES[i].v * PARTICLES[i].vy / UPDATES_PER_SECOND));
+    int pid = PARTICLE_PHYSICS_IDX[i];
+
+    particle_set_x(i, PARTICLE_PHYSICS[pid].x + (1.0 * PARTICLE_PHYSICS[pid].v * PARTICLE_PHYSICS[pid].vx / UPDATES_PER_SECOND));
+    particle_set_y(i, PARTICLE_PHYSICS[pid].y + (1.0 * PARTICLE_PHYSICS[pid].v * PARTICLE_PHYSICS[pid].vy / UPDATES_PER_SECOND));
 }
 
 void particle_render(int i, SDL_Renderer *renderer) {
+    int gid   = PARTICLE_GRAPHICS_IDX[i];
+    int gsrid = PARTICLE_GRAPHICS_SDL_RECT_IDX[gid];
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &PARTICLES[i].rect);
+    SDL_RenderFillRect(renderer, &PARTICLE_GRAPHICS_SDL_RECTS[gsrid]);
 }
 
 void particle_init_all(int w, int h, int v) {
-    for (int i = 0; i < PARTICLES_MAX; i++) {
+    for (int i = 0; i < PARTICLE_MAX; i++) {
         particle_init(i, 0, 0, w, h, v);
     }
 }
 
 int particle_get_free() {
-    for (int i = 0; i < PARTICLES_MAX; i++) {
-        if (PARTICLES[i].alive == 1) {
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        int hid = PARTICLE_HEALTH_IDX[i];
+
+        if (PARTICLE_HEALTHS[hid].alive == 1) {
             continue;
         }
 
@@ -755,8 +805,10 @@ int particle_get_free() {
 }
 
 void particle_update_all() {
-    for (int i = 0; i < PARTICLES_MAX; i++) {
-        if (PARTICLES[i].alive == 0) {
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        int hid = PARTICLE_HEALTH_IDX[i];
+
+        if (PARTICLE_HEALTHS[hid].alive == 0) {
             continue;
         }
 
@@ -765,8 +817,10 @@ void particle_update_all() {
 }
 
 void particle_render_all(SDL_Renderer *renderer) {
-    for (int i = 0; i < PARTICLES_MAX; i++) {
-        if (PARTICLES[i].alive == 0) {
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        int hid = PARTICLE_HEALTH_IDX[i];
+
+        if (PARTICLE_HEALTHS[hid].alive == 0) {
             continue;
         }
 
@@ -859,13 +913,16 @@ void collision_make_explosion(float x, float y) {
             return;
         }
 
+        int pid = PARTICLE_PHYSICS_IDX[idx];
+        int hid = PARTICLE_HEALTH_IDX[idx];
+
         particle_set_x(idx, x);
         particle_set_y(idx, y);
 
-        PARTICLES[idx].vx = EXPLOSION_PARTICLES_VX[i];
-        PARTICLES[idx].vy = EXPLOSION_PARTICLES_VY[i];
+        PARTICLE_PHYSICS[pid].vx = EXPLOSION_PARTICLES_VX[i];
+        PARTICLE_PHYSICS[pid].vy = EXPLOSION_PARTICLES_VY[i];
 
-        PARTICLES[idx].alive = 1;
+        PARTICLE_HEALTHS[hid].alive = 1;
     }
 }
 // collision.c end
@@ -994,7 +1051,7 @@ void game_run(SDL_Renderer *renderer) {
         // -----
         Uint64 debug_end = SDL_GetPerformanceCounter();
         double debug_elapsed = performance_counters_to_ms(debug_start, debug_end);
-        SDL_Log("frame time: %f ms", debug_elapsed);
+        //SDL_Log("frame time: %f ms", debug_elapsed); //TODO
         // -----
 
         //SDL_Delay(SLEEP_MS);
@@ -1088,7 +1145,7 @@ void entity_render_all(SDL_Renderer *renderer) {
     }
 }
 
-void init_physics_sdl_rect_idx() {
+void physics_sdl_rect_idx_set_up() {
     int physics_sdl_rect_i = 0;
 
     for (int i = 0; i < PHYSICS_MAX; i++) {
@@ -1098,7 +1155,7 @@ void init_physics_sdl_rect_idx() {
     }
 }
 
-void init_graphics_sdl_rect_idx() {
+void graphics_sdl_rect_idx_set_up() {
     int graphics_sdl_rect_i = 0;
 
     for (int i = 0; i < GRAPHICS_MAX; i++) {
@@ -1108,41 +1165,30 @@ void init_graphics_sdl_rect_idx() {
     }
 }
 
+void particle_physics_sdl_rect_idx_set_up() {
+    int particle_physics_sdl_rect_i = 0;
 
-int main(void) {
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
-        SDL_Log("ERROR: SDL_Init() (%s)", SDL_GetError());
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        PARTICLE_PHYSICS_SDL_RECT_IDX[i] = particle_physics_sdl_rect_i;
 
-        return 1;
+        particle_physics_sdl_rect_i++;
     }
 
-    SDL_Window *window = SDL_CreateWindow("WAT", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, 0);
+}
 
-    if (window == NULL) {
-        SDL_Log("ERROR: SDL_CreateWindow() (%s)", SDL_GetError());
+void particle_graphics_sdl_rect_idx_set_up() {
+    int particle_graphics_sdl_rect_i = 0;
 
-        SDL_Quit();
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        PARTICLE_GRAPHICS_SDL_RECT_IDX[i] = particle_graphics_sdl_rect_i;
 
-        return 1;
+        particle_graphics_sdl_rect_i++;
     }
+}
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(
-        window, -1,
-        //SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-        SDL_RENDERER_ACCELERATED
-    );
-
-    if (renderer == NULL) {
-        SDL_Log("ERROR: SDL_CreateRenderer() (%s)", SDL_GetError());
-
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-
-        return 1;
-    }
-
-    init_physics_sdl_rect_idx();
-    init_graphics_sdl_rect_idx();
+void entity_set_up() {
+    physics_sdl_rect_idx_set_up();
+    graphics_sdl_rect_idx_set_up();
 
     int entity_i   = 0;
     int physics_i  = 0;
@@ -1203,6 +1249,65 @@ int main(void) {
             bullet_i++;
         }
     }
+}
+
+void particle_set_up() {
+    particle_physics_sdl_rect_idx_set_up();
+    particle_graphics_sdl_rect_idx_set_up();
+
+    int particle_i = 0;
+    int physics_i  = 0;
+    int graphics_i = 0;
+    int health_i = 0;
+
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        PARTICLE_PHYSICS_IDX[particle_i]  = physics_i;
+        PARTICLE_GRAPHICS_IDX[particle_i] = graphics_i;
+        PARTICLE_HEALTH_IDX[particle_i] = health_i;
+        
+        particle_i++;
+        physics_i++;
+        graphics_i++;
+        health_i++;
+    }
+}
+
+
+int main(void) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+        SDL_Log("ERROR: SDL_Init() (%s)", SDL_GetError());
+
+        return 1;
+    }
+
+    SDL_Window *window = SDL_CreateWindow("WAT", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, 0);
+
+    if (window == NULL) {
+        SDL_Log("ERROR: SDL_CreateWindow() (%s)", SDL_GetError());
+
+        SDL_Quit();
+
+        return 1;
+    }
+
+    SDL_Renderer *renderer = SDL_CreateRenderer(
+        window, -1,
+        //SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+        SDL_RENDERER_ACCELERATED
+    );
+
+    if (renderer == NULL) {
+        SDL_Log("ERROR: SDL_CreateRenderer() (%s)", SDL_GetError());
+
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+
+        return 1;
+    }
+
+    entity_set_up();
+
+    particle_set_up();
 
     rand_init(&TINYMT_STATE, time(NULL));
 

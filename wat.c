@@ -252,15 +252,10 @@ void bullet_init(int idx, float x, float y, int w, int h, int v) {
     int eid   = BULLET_ENTITY_IDX[idx];
     int pcid  = ENTITY_POSITION_IDX[eid];
     int mcid  = ENTITY_MOVEMENT_IDX[eid];
-    int rcid  = ENTITY_RENDER_IDX[eid];
     int hcid  = ENTITY_HEALTH_IDX[eid];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
     POSITIONS[pcid].w = w;
     POSITIONS[pcid].h = h;
-
-    RENDER_SDL_RECTS[rsrid].w = POSITIONS[pcid].w;
-    RENDER_SDL_RECTS[rsrid].h = POSITIONS[pcid].h;
 
     entity_set_x(eid, x);
     entity_set_y(eid, y);
@@ -298,16 +293,11 @@ void player_init(int idx, float x, float y, int w, int h, int v) {
     int eid   = PLAYER_ENTITY_IDX[idx];
     int pcid  = ENTITY_POSITION_IDX[eid];
     int mcid  = ENTITY_MOVEMENT_IDX[eid];
-    int rcid  = ENTITY_RENDER_IDX[eid];
     int hcid  = ENTITY_HEALTH_IDX[eid];
     int sid   = ENTITY_SHOOTING_IDX[eid];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
     POSITIONS[pcid].w = w;
     POSITIONS[pcid].h = h;
-
-    RENDER_SDL_RECTS[rsrid].w = POSITIONS[pcid].w;
-    RENDER_SDL_RECTS[rsrid].h = POSITIONS[pcid].h;
 
     player_set_x(idx, x);
     player_set_y(idx, y);
@@ -323,8 +313,6 @@ void player_init(int idx, float x, float y, int w, int h, int v) {
 void player_set_x(int idx, float value) {
     int eid   = PLAYER_ENTITY_IDX[idx];
     int pcid  = ENTITY_POSITION_IDX[eid];
-    int rcid  = ENTITY_RENDER_IDX[eid];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
     float x_min = 0 + POSITIONS[pcid].w / 2;
     float x_max = WINDOW_W - POSITIONS[pcid].w / 2;
@@ -336,15 +324,11 @@ void player_set_x(int idx, float value) {
     }
 
     POSITIONS[pcid].x = value;
-
-    RENDER_SDL_RECTS[rsrid].x = floor(POSITIONS[pcid].x - (POSITIONS[pcid].w / 2));
 }
 
 void player_set_y(int idx, float value) {
     int eid   = PLAYER_ENTITY_IDX[idx];
     int pcid  = ENTITY_POSITION_IDX[eid];
-    int rcid  = ENTITY_RENDER_IDX[eid];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
     float y_min = 0 + POSITIONS[pcid].h / 2;
     float y_max = WINDOW_H - POSITIONS[pcid].h / 2;
@@ -356,8 +340,6 @@ void player_set_y(int idx, float value) {
     }
 
     POSITIONS[pcid].y = value;
-
-    RENDER_SDL_RECTS[rsrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
 }
 
 void player_on_button_a_keydown(int idx) {
@@ -483,15 +465,10 @@ void enemy_init(int idx, float x, float y, int w, int h, int v) {
     int eid   = ENEMY_ENTITY_IDX[idx];
     int pcid  = ENTITY_POSITION_IDX[eid];
     int mcid  = ENTITY_MOVEMENT_IDX[eid];
-    int rcid  = ENTITY_RENDER_IDX[eid];
     int hcid  = ENTITY_HEALTH_IDX[eid];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
     POSITIONS[pcid].w = w;
     POSITIONS[pcid].h = h;
-
-    RENDER_SDL_RECTS[rsrid].w = POSITIONS[pcid].w;
-    RENDER_SDL_RECTS[rsrid].h = POSITIONS[pcid].h;
 
     entity_set_x(eid, x);
     entity_set_y(eid, y);
@@ -840,6 +817,10 @@ void in_game_state_update() {
 void in_game_state_render(SDL_Renderer *renderer) {
     particle_render_all(renderer);
 
+    render_sync_range(0, PLAYER_MAX -1);
+    render_sync_range(0, ENEMY_MAX -1);
+    render_sync_range(0, BULLET_MAX -1);
+
     render_update_range(0, ENTITY_MAX -1, renderer);
 
     hud_render(renderer);
@@ -997,9 +978,7 @@ void input_update() {
 
 void entity_set_x(int idx, float value) {
     int pcid  = ENTITY_POSITION_IDX[idx];
-    int rcid  = ENTITY_RENDER_IDX[idx];
     int hcid  = ENTITY_HEALTH_IDX[idx];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
     float x_min = 0 - POSITIONS[pcid].w - 1;
     float x_max = WINDOW_W + POSITIONS[pcid].w + 1;
@@ -1015,15 +994,11 @@ void entity_set_x(int idx, float value) {
     }
 
     POSITIONS[pcid].x = value;
-
-    RENDER_SDL_RECTS[rsrid].x = floor(POSITIONS[pcid].x - (POSITIONS[pcid].w / 2));
 }
 
 void entity_set_y(int idx, float value) {
     int pcid  = ENTITY_POSITION_IDX[idx];
-    int rcid  = ENTITY_RENDER_IDX[idx];
     int hcid  = ENTITY_HEALTH_IDX[idx];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
     float y_min = 0 - POSITIONS[pcid].h - 1;
     float y_max = WINDOW_H + POSITIONS[pcid].h + 1;
@@ -1039,8 +1014,6 @@ void entity_set_y(int idx, float value) {
     }
 
     POSITIONS[pcid].y = value;
-
-    RENDER_SDL_RECTS[rsrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
 }
 
 void movement_update(int idx) {
@@ -1096,15 +1069,15 @@ void render_sync_range(int start, int end) {
 
         //TODO: fix me
 
-        int ccid  = ENTITY_COLLISION_IDX[eid];
+        int rcid  = ENTITY_RENDER_IDX[eid];
         int pcid  = ENTITY_POSITION_IDX[eid];
-        int csrid = COLLISION_SDL_RECT_IDX[ccid];
+        int rsrid = RENDER_SDL_RECT_IDX[rcid];
 
-        COLLISION_SDL_RECTS[csrid].w = POSITIONS[pcid].w;
-        COLLISION_SDL_RECTS[csrid].h = POSITIONS[pcid].h;
+        RENDER_SDL_RECTS[rsrid].w = POSITIONS[pcid].w;
+        RENDER_SDL_RECTS[rsrid].h = POSITIONS[pcid].h;
 
-        COLLISION_SDL_RECTS[csrid].x = floor(POSITIONS[pcid].x - (POSITIONS[pcid].w / 2));
-        COLLISION_SDL_RECTS[csrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
+        RENDER_SDL_RECTS[rsrid].x = floor(POSITIONS[pcid].x - (POSITIONS[pcid].w / 2));
+        RENDER_SDL_RECTS[rsrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
     }
 }
 

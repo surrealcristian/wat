@@ -193,21 +193,7 @@ extern float EXPLOSION_PARTICLES_VY[4];
 // config.h end
 
 
-// bullet.h start
-void bullet_init_all(int w, int h, int v);
-// bullet.h end
-
-
 // player.h start
-void player_init(
-    int    index,
-    float  x,
-    float  y,
-    int    w,
-    int    h,
-    int    v
-);
-
 void player_set_x(int index, float value);
 void player_set_y(int index, float value);
 void player_on_button_a_keydown(int index);
@@ -227,18 +213,9 @@ struct EnemyManager {
     float        spacing;
 };
 
-void enemy_init_all(int w, int h, int v);
-
 void enemy_try_spawn();
 void enemy_spawn();
 // enemy.h end
-
-
-// particle.h start
-void particle_init(int i, float x, float y, int w, int h, int v);
-
-void particle_init_all(int w, int h, int v);
-// particle.h end
 
 
 // score.h start

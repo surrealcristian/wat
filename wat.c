@@ -228,40 +228,7 @@ float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
 // config.c end
 
 
-// bullet.c start
-void bullet_init_all(int w, int h, int v) {
-    for (int i = 0; i < BULLET_MAX; i++) {
-        int eid = BULLET_ENTITY_IDX[i];
-
-        movement_init(eid, 0, 0, w, h, v);
-        health_init(eid, 0);
-    }
-}
-// bullet.c end
-
-
 // player.c start
-void player_init(int idx, float x, float y, int w, int h, int v) {
-    int eid   = PLAYER_ENTITY_IDX[idx];
-    int pcid  = ENTITY_POSITION_IDX[eid];
-    int mcid  = ENTITY_MOVEMENT_IDX[eid];
-    int hcid  = ENTITY_HEALTH_IDX[eid];
-    int sid   = ENTITY_SHOOTING_IDX[eid];
-
-    POSITIONS[pcid].w = w;
-    POSITIONS[pcid].h = h;
-
-    player_set_x(idx, x);
-    player_set_y(idx, y);
-
-    MOVEMENTS[mcid].v = v;
-
-    HEALTHS[hcid].alive = 1;
-
-    SHOOTINGS[sid].bullets_n = PLAYER_BULLETS_INIT_N;
-    SHOOTINGS[sid].fire_spacing = 128;
-}
-
 void player_set_x(int idx, float value) {
     int eid   = PLAYER_ENTITY_IDX[idx];
     int pcid  = ENTITY_POSITION_IDX[eid];
@@ -412,18 +379,6 @@ void player_fire_update_all() {
 
 
 // enemy.c start
-void enemy_init_all(int w, int h, int v) {
-    ENEMY_MANAGER.time    = 0.0;
-    ENEMY_MANAGER.spacing = 100.0;
-
-    for (int i = 0; i < ENEMIES_MAX; i++) {
-        int eid = ENEMY_ENTITY_IDX[i];
-
-        movement_init(eid, 0, 0, w, h, v);
-        health_init(eid, 0);
-    }
-}
-
 void enemy_try_spawn() {
     ENEMY_MANAGER.time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
 
@@ -453,42 +408,6 @@ void enemy_spawn() {
     MOVEMENTS[mcid].vy = ENEMY_VY;
 }
 // enemy.c end
-
-
-// particle.c start
-void particle_init(int i, float x, float y, int w, int h, int v) {
-    int eid   = PARTICLE_ENTITY_IDX[i];
-    int pcid  = ENTITY_POSITION_IDX[eid];
-    int mcid  = ENTITY_MOVEMENT_IDX[eid];
-    int rcid  = ENTITY_RENDER_IDX[eid];
-    int hcid  = ENTITY_HEALTH_IDX[eid];
-    int ccid  = ENTITY_COLLISION_IDX[eid];
-    int csrid = COLLISION_SDL_RECT_IDX[ccid];
-    int rsrid = RENDER_SDL_RECT_IDX[rcid];
-
-    POSITIONS[pcid].w = w;
-    POSITIONS[pcid].h = h;
-
-    COLLISION_SDL_RECTS[csrid].w = POSITIONS[pcid].w;
-    COLLISION_SDL_RECTS[csrid].h = POSITIONS[pcid].h;
-
-    RENDER_SDL_RECTS[rsrid].w = POSITIONS[pcid].w;
-    RENDER_SDL_RECTS[rsrid].h = POSITIONS[pcid].h;
-
-    entity_set_x(eid, x);
-    entity_set_y(eid, y);
-
-    MOVEMENTS[mcid].v = v;
-
-    HEALTHS[hcid].alive = 0;
-}
-
-void particle_init_all(int w, int h, int v) {
-    for (int i = 0; i < PARTICLE_MAX; i++) {
-        particle_init(i, 0, 0, w, h, v);
-    }
-}
-// particle.c end
 
 
 // score.c start
@@ -1119,24 +1038,43 @@ int main(void) {
 
     rand_init(&TINYMT_STATE, time(NULL));
 
-    bullet_init_all(PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
+    for (int i = 0; i < BULLET_MAX; i++) {
+        int eid = BULLET_ENTITY_IDX[i];
 
-    player_init(
-        0,
-        WINDOW_W / 2,
-        WINDOW_H / 2,
-        PLAYER_WIDTH,
-        PLAYER_HEIGHT,
-        PLAYER_V
-    );
+        movement_init(eid, 0, 0, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
+        health_init(eid, 0);
+    }
 
-    enemy_init_all(
-        ENEMY_WIDTH,
-        ENEMY_HEIGHT,
-        ENEMY_V
-    );
+    //init players
+    for (int i = 0; i < PLAYER_MAX; i++) {
+        int eid = PLAYER_ENTITY_IDX[i];
+        int sid = ENTITY_SHOOTING_IDX[eid];
 
-    particle_init_all(PARTICLE_WIDTH, PARTICLE_HEIGHT, PARTICLE_V);
+        movement_init(eid, WINDOW_W / 2, WINDOW_H / 2, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_V);
+        health_init(eid, 1);
+
+        SHOOTINGS[sid].bullets_n = PLAYER_BULLETS_INIT_N;
+        SHOOTINGS[sid].fire_spacing = 128;
+    }
+
+    //init enemies
+    ENEMY_MANAGER.time    = 0.0;
+    ENEMY_MANAGER.spacing = 100.0;
+
+    for (int i = 0; i < ENEMIES_MAX; i++) {
+        int eid = ENEMY_ENTITY_IDX[i];
+
+        movement_init(eid, 0, 0, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_V);
+        health_init(eid, 0);
+    }
+
+    // init particles
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        int eid   = PARTICLE_ENTITY_IDX[i];
+
+        movement_init(eid, 0, 0, PARTICLE_WIDTH, PARTICLE_HEIGHT, PARTICLE_V);
+        health_init(eid, 0);
+    }
 
     score_init();
 

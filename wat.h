@@ -196,14 +196,6 @@ void bullet_init(int index, float x, float y, int w, int h, int v);
 
 void bullet_init_all(int w, int h, int v);
 
-float bullet_get_x(int index);
-
-void bullet_set_x(int index, float value);
-
-float bullet_get_y(int index);
-
-void bullet_set_y(int index, float value);
-
 int bullet_get_free();
 
 void bullet_update(int index);
@@ -243,10 +235,6 @@ struct EnemyManager {
 
 void enemy_init(int idx, float x, float y, int w, int h, int v);
 void enemy_init_all(int w, int h, int v);
-
-void enemy_set_x(int idx, float value);
-void enemy_set_y(int idx, float value);
-
 
 int enemy_get_free();
 void enemy_try_spawn();
@@ -343,6 +331,9 @@ void game_run(SDL_Renderer *renderer);
 void input_update();
 // input.h end
 
+
+void entity_set_x(int idx, float value);
+void entity_set_y(int idx, float value);
 
 void entity_render_all(SDL_Renderer *renderer);
 

@@ -332,6 +332,10 @@ void movement_update(int idx);
 
 void movement_update_range(int start, int end);
 
-void entity_render_all(SDL_Renderer *renderer);
+void collision_sync_range(int start, int end);
+
+void render_sync_range(int start, int end);
+
+void render_update_range(int start, int end, SDL_Renderer *renderer);
 
 #endif

@@ -16,6 +16,8 @@
 
 #define POSITION_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
 
+#define MOVEMENT_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+
 #define HEALTH_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
 
 #define RENDER_SDL_RECT_PER_PLAYER 1
@@ -35,6 +37,9 @@ struct PositionComponent {
     float y;
     int   w;
     int   h;
+};
+
+struct MovementComponent {
     int   v;
     int   vx;
     int   vy;

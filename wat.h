@@ -195,8 +195,6 @@ extern float EXPLOSION_PARTICLES_VY[4];
 void bullet_init(int index, float x, float y, int w, int h, int v);
 
 void bullet_init_all(int w, int h, int v);
-
-int bullet_get_free();
 // bullet.h end
 
 
@@ -232,7 +230,6 @@ struct EnemyManager {
 void enemy_init(int idx, float x, float y, int w, int h, int v);
 void enemy_init_all(int w, int h, int v);
 
-int enemy_get_free();
 void enemy_try_spawn();
 void enemy_spawn();
 // enemy.h end
@@ -333,6 +330,8 @@ void movement_update(int idx);
 void movement_update_range(int start, int end);
 
 void collision_sync_range(int start, int end);
+
+int health_get_dead_range(int start, int end);
 
 void render_sync_range(int start, int end);
 

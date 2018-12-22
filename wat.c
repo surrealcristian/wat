@@ -270,21 +270,6 @@ void bullet_init_all(int w, int h, int v) {
         bullet_init(i, 0, 0, w, h, v);
     }
 }
-
-int bullet_get_free() {
-    for (int i = 0; i < BULLET_MAX; i++) {
-        int eid = BULLET_ENTITY_IDX[i];
-        int hcid = ENTITY_HEALTH_IDX[eid];
-
-        if (HEALTHS[hcid].alive == 1) {
-            continue;
-        }
-
-        return i;
-    }
-
-    return -1;
-}
 // bullet.c end
 
 
@@ -364,13 +349,12 @@ void player_fire(int idx) {
     int sid = ENTITY_SHOOTING_IDX[eid];
 
     for (int i = 0; i < SHOOTINGS[sid].bullets_n; i++) {
-        int bid = bullet_get_free();
+        int beid = health_get_dead_range(BULLET_ENTITY_IDX[0], BULLET_ENTITY_IDX[BULLET_MAX - 1]);
 
-        if (bid == -1) {
+        if (beid == -1) {
             return;
         }
 
-        int beid = BULLET_ENTITY_IDX[bid];
         int bmcid = ENTITY_MOVEMENT_IDX[beid];
         int bhcid = ENTITY_HEALTH_IDX[beid];
 
@@ -487,21 +471,6 @@ void enemy_init_all(int w, int h, int v) {
     }
 }
 
-int enemy_get_free() {
-    for (int i = 0; i < ENEMIES_MAX; i++) {
-        int eid = ENEMY_ENTITY_IDX[i];
-        int hcid = ENTITY_HEALTH_IDX[eid];
-
-        if (HEALTHS[hcid].alive == 1) {
-            continue;
-        }
-
-        return i;
-    }
-
-    return -1;
-}
-
 void enemy_try_spawn() {
     ENEMY_MANAGER.time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
 
@@ -512,13 +481,12 @@ void enemy_try_spawn() {
 }
 
 void enemy_spawn() {
-    int idx = enemy_get_free();
+    int eid = health_get_dead_range(ENEMY_ENTITY_IDX[0], ENEMY_ENTITY_IDX[ENEMY_MAX - 1]);
 
-    if (idx == -1) {
+    if (eid == -1) {
         return;
     }
 
-    int eid  = ENEMY_ENTITY_IDX[idx];
     int pcid = ENTITY_POSITION_IDX[eid];
     int hcid = ENTITY_HEALTH_IDX[eid];
     int mcid = ENTITY_MOVEMENT_IDX[eid];
@@ -676,6 +644,8 @@ void score_init() {
 
 // collision.c start
 void collision_player_vs_enemies() {
+    //TODO: fix me
+
     int peid  = PLAYER_ENTITY_IDX[0];
     int pccid = ENTITY_COLLISION_IDX[peid];
     int phcid = ENTITY_HEALTH_IDX[peid];
@@ -1059,6 +1029,20 @@ void collision_sync_range(int start, int end) {
     }
 };
 
+int health_get_dead_range(int start, int end) {
+    for (int eid = start; eid < end; eid++) {
+        int hcid = ENTITY_HEALTH_IDX[eid];
+
+        if (HEALTHS[hcid].alive == 1) {
+            continue;
+        }
+
+        return eid;
+    }
+
+    return -1;
+}
+
 void render_sync_range(int start, int end) {
     for (int eid = start; eid < end; eid++) {
         int hcid  = ENTITY_HEALTH_IDX[eid];
@@ -1066,8 +1050,6 @@ void render_sync_range(int start, int end) {
         if (HEALTHS[hcid].alive == 0) {
             continue;
         }
-
-        //TODO: fix me
 
         int rcid  = ENTITY_RENDER_IDX[eid];
         int pcid  = ENTITY_POSITION_IDX[eid];
@@ -1102,6 +1084,7 @@ void render_update_range(int start, int end, SDL_Renderer *renderer) {
         }
     }
 }
+
 
 void render_sdl_rect_idx_set_up() {
     int render_sdl_rect_i = 0;

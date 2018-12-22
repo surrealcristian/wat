@@ -33,14 +33,16 @@ struct PositionComponent PARTICLE_POSITIONS[PARTICLE_MAX];
 struct RenderComponent   PARTICLE_RENDERS[PARTICLE_MAX];
 struct HealthComponent   PARTICLE_HEALTHS[PARTICLE_MAX];
 
-SDL_Rect PARTICLE_POSITION_SDL_RECTS[PARTICLE_MAX];
 SDL_Rect PARTICLE_RENDER_SDL_RECTS[PARTICLE_MAX];
+SDL_Rect PARTICLE_COLLISION_SDL_RECTS[PARTICLE_MAX];
 
-int PARTICLE_POSITION_SDL_RECT_IDX[PARTICLE_MAX];
 int PARTICLE_RENDER_SDL_RECT_IDX[PARTICLE_MAX];
+int PARTICLE_COLLISION_SDL_RECT_IDX[PARTICLE_MAX];
+
 int PARTICLE_POSITION_IDX[PARTICLE_MAX];
 int PARTICLE_RENDER_IDX[PARTICLE_MAX];
 int PARTICLE_HEALTH_IDX[PARTICLE_MAX];
+int PARTICLE_COLLISION_IDX[PARTICLE_MAX];
 
 
 // others
@@ -737,17 +739,18 @@ void enemy_update_all() {
 
 // particle.c start
 void particle_init(int i, float x, float y, int w, int h, int v) {
-    int pcid   = PARTICLE_POSITION_IDX[i];
-    int rcid   = PARTICLE_RENDER_IDX[i];
-    int hcid   = PARTICLE_HEALTH_IDX[i];
-    int csrid = PARTICLE_POSITION_SDL_RECT_IDX[pcid];
+    int pcid  = PARTICLE_POSITION_IDX[i];
+    int rcid  = PARTICLE_RENDER_IDX[i];
+    int hcid  = PARTICLE_HEALTH_IDX[i];
+    int ccid  = PARTICLE_COLLISION_IDX[i];
     int rsrid = PARTICLE_RENDER_SDL_RECT_IDX[rcid];
+    int csrid = PARTICLE_COLLISION_SDL_RECT_IDX[ccid];
 
     PARTICLE_POSITIONS[pcid].w = w;
     PARTICLE_POSITIONS[pcid].h = h;
 
-    PARTICLE_POSITION_SDL_RECTS[csrid].w = PARTICLE_POSITIONS[pcid].w;
-    PARTICLE_POSITION_SDL_RECTS[csrid].h = PARTICLE_POSITIONS[pcid].h;
+    PARTICLE_COLLISION_SDL_RECTS[csrid].w = PARTICLE_POSITIONS[pcid].w;
+    PARTICLE_COLLISION_SDL_RECTS[csrid].h = PARTICLE_POSITIONS[pcid].h;
 
     PARTICLE_RENDER_SDL_RECTS[rsrid].w = PARTICLE_POSITIONS[pcid].w;
     PARTICLE_RENDER_SDL_RECTS[rsrid].h = PARTICLE_POSITIONS[pcid].h;
@@ -761,11 +764,12 @@ void particle_init(int i, float x, float y, int w, int h, int v) {
 }
 
 void particle_set_x(int i, float value) {
-    int pcid   = PARTICLE_POSITION_IDX[i];
-    int rcid   = PARTICLE_RENDER_IDX[i];
-    int hcid   = PARTICLE_HEALTH_IDX[i];
-    int csrid = PARTICLE_POSITION_SDL_RECT_IDX[pcid];
+    int pcid  = PARTICLE_POSITION_IDX[i];
+    int rcid  = PARTICLE_RENDER_IDX[i];
+    int hcid  = PARTICLE_HEALTH_IDX[i];
+    int ccid  = PARTICLE_COLLISION_IDX[i];
     int rsrid = PARTICLE_RENDER_SDL_RECT_IDX[rcid];
+    int csrid = PARTICLE_COLLISION_SDL_RECT_IDX[ccid];
 
     float x_min = 0 - PARTICLE_POSITIONS[pcid].w + 1;
     float x_max = WINDOW_W + PARTICLE_POSITIONS[pcid].w + 1;
@@ -777,16 +781,17 @@ void particle_set_x(int i, float value) {
 
     PARTICLE_POSITIONS[pcid].x = value;
 
-    PARTICLE_POSITION_SDL_RECTS[csrid].x  = floor(PARTICLE_POSITIONS[pcid].x - (PARTICLE_POSITIONS[pcid].w / 2));
-    PARTICLE_RENDER_SDL_RECTS[rsrid].x = floor(PARTICLE_POSITIONS[pcid].x - (PARTICLE_POSITIONS[pcid].w / 2));
+    PARTICLE_COLLISION_SDL_RECTS[csrid].x = floor(PARTICLE_POSITIONS[pcid].x - (PARTICLE_POSITIONS[pcid].w / 2));
+    PARTICLE_RENDER_SDL_RECTS[rsrid].x    = floor(PARTICLE_POSITIONS[pcid].x - (PARTICLE_POSITIONS[pcid].w / 2));
 }
 
 void particle_set_y(int i, float value) {
-    int pcid = PARTICLE_POSITION_IDX[i];
-    int rcid = PARTICLE_RENDER_IDX[i];
-    int hcid = PARTICLE_HEALTH_IDX[i];
-    int csrid = PARTICLE_POSITION_SDL_RECT_IDX[pcid];
+    int pcid  = PARTICLE_POSITION_IDX[i];
+    int rcid  = PARTICLE_RENDER_IDX[i];
+    int hcid  = PARTICLE_HEALTH_IDX[i];
+    int ccid  = PARTICLE_COLLISION_IDX[i];
     int rsrid = PARTICLE_RENDER_SDL_RECT_IDX[rcid];
+    int csrid = PARTICLE_COLLISION_SDL_RECT_IDX[ccid];
 
     float y_min = 0 - PARTICLE_POSITIONS[pcid].h - 1;
     float y_max = WINDOW_H + PARTICLE_POSITIONS[pcid].h + 1;
@@ -798,8 +803,8 @@ void particle_set_y(int i, float value) {
 
     PARTICLE_POSITIONS[pcid].y = value;
 
-    PARTICLE_POSITION_SDL_RECTS[csrid].y  = floor(PARTICLE_POSITIONS[pcid].y - (PARTICLE_POSITIONS[pcid].h / 2));
-    PARTICLE_RENDER_SDL_RECTS[rsrid].y = floor(PARTICLE_POSITIONS[pcid].y - (PARTICLE_POSITIONS[pcid].h / 2));
+    PARTICLE_COLLISION_SDL_RECTS[csrid].y = floor(PARTICLE_POSITIONS[pcid].y - (PARTICLE_POSITIONS[pcid].h / 2));
+    PARTICLE_RENDER_SDL_RECTS[rsrid].y    = floor(PARTICLE_POSITIONS[pcid].y - (PARTICLE_POSITIONS[pcid].h / 2));
 }
 
 void particle_update(int i) {
@@ -1186,6 +1191,16 @@ void entity_render_all(SDL_Renderer *renderer) {
     }
 }
 
+void render_sdl_rect_idx_set_up() {
+    int render_sdl_rect_i = 0;
+
+    for (int i = 0; i < RENDER_MAX; i++) {
+        RENDER_SDL_RECT_IDX[i] = render_sdl_rect_i;
+
+        render_sdl_rect_i++;
+    }
+}
+
 void collision_sdl_rect_idx_set_up() {
     int collision_sdl_rect_i = 0;
 
@@ -1196,44 +1211,34 @@ void collision_sdl_rect_idx_set_up() {
     }
 }
 
-void graphics_sdl_rect_idx_set_up() {
-    int graphics_sdl_rect_i = 0;
+void particle_render_sdl_rect_idx_set_up() {
+    int particle_render_sdl_rect_i = 0;
 
-    for (int i = 0; i < RENDER_MAX; i++) {
-        RENDER_SDL_RECT_IDX[i] = graphics_sdl_rect_i;
+    for (int i = 0; i < PARTICLE_MAX; i++) {
+        PARTICLE_RENDER_SDL_RECT_IDX[i] = particle_render_sdl_rect_i;
 
-        graphics_sdl_rect_i++;
+        particle_render_sdl_rect_i++;
     }
 }
 
-void particle_physics_sdl_rect_idx_set_up() {
-    int particle_physics_sdl_rect_i = 0;
+void particle_collision_sdl_rect_idx_set_up() {
+    int particle_collision_sdl_rect_i = 0;
 
     for (int i = 0; i < PARTICLE_MAX; i++) {
-        PARTICLE_POSITION_SDL_RECT_IDX[i] = particle_physics_sdl_rect_i;
+        PARTICLE_COLLISION_SDL_RECT_IDX[i] = particle_collision_sdl_rect_i;
 
-        particle_physics_sdl_rect_i++;
+        particle_collision_sdl_rect_i++;
     }
 
-}
-
-void particle_graphics_sdl_rect_idx_set_up() {
-    int particle_graphics_sdl_rect_i = 0;
-
-    for (int i = 0; i < PARTICLE_MAX; i++) {
-        PARTICLE_RENDER_SDL_RECT_IDX[i] = particle_graphics_sdl_rect_i;
-
-        particle_graphics_sdl_rect_i++;
-    }
 }
 
 void entity_set_up() {
-    graphics_sdl_rect_idx_set_up();
+    render_sdl_rect_idx_set_up();
     collision_sdl_rect_idx_set_up();
 
     int entity_i    = 0;
-    int physics_i   = 0;
-    int graphics_i  = 0;
+    int position_i   = 0;
+    int render_i  = 0;
     int health_i    = 0;
     int shooting_i  = 0;
     int collision_i = 0;
@@ -1241,15 +1246,15 @@ void entity_set_up() {
     for (int i = 0; i < PLAYER_MAX; i++) {
         PLAYER_ENTITY_IDX[i] = entity_i;
 
-        ENTITY_POSITION_IDX[entity_i]  = physics_i;
-        ENTITY_RENDER_IDX[entity_i]    = graphics_i;
+        ENTITY_POSITION_IDX[entity_i]  = position_i;
+        ENTITY_RENDER_IDX[entity_i]    = render_i;
         ENTITY_HEALTH_IDX[entity_i]    = health_i;
         ENTITY_SHOOTING_IDX[entity_i]  = shooting_i;
         ENTITY_COLLISION_IDX[entity_i] = collision_i;
         
         entity_i++;
-        physics_i++;
-        graphics_i++;
+        position_i++;
+        render_i++;
         health_i++;
         shooting_i++;
         collision_i++;
@@ -1258,15 +1263,15 @@ void entity_set_up() {
     for (int i = 0; i < ENEMY_MAX; i++) {
         ENEMY_ENTITY_IDX[i] = entity_i;
 
-        ENTITY_POSITION_IDX[entity_i]  = physics_i;
-        ENTITY_RENDER_IDX[entity_i]    = graphics_i;
+        ENTITY_POSITION_IDX[entity_i]  = position_i;
+        ENTITY_RENDER_IDX[entity_i]    = render_i;
         ENTITY_HEALTH_IDX[entity_i]    = health_i;
         ENTITY_SHOOTING_IDX[entity_i]  = shooting_i;
         ENTITY_COLLISION_IDX[entity_i] = collision_i;
 
         entity_i++;
-        physics_i++;
-        graphics_i++;
+        position_i++;
+        render_i++;
         health_i++;
         shooting_i++;
         collision_i++;
@@ -1275,15 +1280,15 @@ void entity_set_up() {
     for (int i = 0; i < BULLET_MAX; i++) {
         BULLET_ENTITY_IDX[i] = entity_i;
 
-        ENTITY_POSITION_IDX[entity_i]  = physics_i;
-        ENTITY_RENDER_IDX[entity_i]    = graphics_i;
+        ENTITY_POSITION_IDX[entity_i]  = position_i;
+        ENTITY_RENDER_IDX[entity_i]    = render_i;
         ENTITY_HEALTH_IDX[entity_i]    = health_i;
         ENTITY_COLLISION_IDX[entity_i] = collision_i;
         ENTITY_SHOOTING_IDX[entity_i]  = -1;
 
         entity_i++;
-        physics_i++;
-        graphics_i++;
+        position_i++;
+        render_i++;
         health_i++;
         collision_i++;
     }
@@ -1300,22 +1305,22 @@ void entity_set_up() {
 }
 
 void particle_set_up() {
-    particle_physics_sdl_rect_idx_set_up();
-    particle_graphics_sdl_rect_idx_set_up();
+    particle_collision_sdl_rect_idx_set_up();
+    particle_render_sdl_rect_idx_set_up();
 
     int particle_i = 0;
-    int physics_i  = 0;
-    int graphics_i = 0;
+    int position_i  = 0;
+    int render_i = 0;
     int health_i = 0;
 
     for (int i = 0; i < PARTICLE_MAX; i++) {
-        PARTICLE_POSITION_IDX[particle_i]  = physics_i;
-        PARTICLE_RENDER_IDX[particle_i] = graphics_i;
+        PARTICLE_POSITION_IDX[particle_i]  = position_i;
+        PARTICLE_RENDER_IDX[particle_i] = render_i;
         PARTICLE_HEALTH_IDX[particle_i] = health_i;
 
         particle_i++;
-        physics_i++;
-        graphics_i++;
+        position_i++;
+        render_i++;
         health_i++;
     }
 }

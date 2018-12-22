@@ -229,26 +229,12 @@ float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
 
 
 // bullet.c start
-void bullet_init(int idx, float x, float y, int w, int h, int v) {
-    int eid   = BULLET_ENTITY_IDX[idx];
-    int pcid  = ENTITY_POSITION_IDX[eid];
-    int mcid  = ENTITY_MOVEMENT_IDX[eid];
-    int hcid  = ENTITY_HEALTH_IDX[eid];
-
-    POSITIONS[pcid].w = w;
-    POSITIONS[pcid].h = h;
-
-    entity_set_x(eid, x);
-    entity_set_y(eid, y);
-
-    MOVEMENTS[mcid].v = v;
-
-    HEALTHS[hcid].alive = 0;
-}
-
 void bullet_init_all(int w, int h, int v) {
     for (int i = 0; i < BULLET_MAX; i++) {
-        bullet_init(i, 0, 0, w, h, v);
+        int eid = BULLET_ENTITY_IDX[i];
+
+        movement_init(eid, 0, 0, w, h, v);
+        health_init(eid, 0);
     }
 }
 // bullet.c end
@@ -426,29 +412,15 @@ void player_fire_update_all() {
 
 
 // enemy.c start
-void enemy_init(int idx, float x, float y, int w, int h, int v) {
-    int eid   = ENEMY_ENTITY_IDX[idx];
-    int pcid  = ENTITY_POSITION_IDX[eid];
-    int mcid  = ENTITY_MOVEMENT_IDX[eid];
-    int hcid  = ENTITY_HEALTH_IDX[eid];
-
-    POSITIONS[pcid].w = w;
-    POSITIONS[pcid].h = h;
-
-    entity_set_x(eid, x);
-    entity_set_y(eid, y);
-
-    MOVEMENTS[mcid].v = v;
-
-    HEALTHS[hcid].alive = 0;
-}
-
 void enemy_init_all(int w, int h, int v) {
     ENEMY_MANAGER.time    = 0.0;
     ENEMY_MANAGER.spacing = 100.0;
 
     for (int i = 0; i < ENEMIES_MAX; i++) {
-        enemy_init(i, 0, 0, w, h, v);
+        int eid = ENEMY_ENTITY_IDX[i];
+
+        movement_init(eid, 0, 0, w, h, v);
+        health_init(eid, 0);
     }
 }
 
@@ -875,6 +847,19 @@ void entity_set_y(int idx, float value) {
     POSITIONS[pcid].y = value;
 }
 
+void movement_init(int eid, float x, float y, int w, int h, int v) {
+    int pcid  = ENTITY_POSITION_IDX[eid];
+    int mcid  = ENTITY_MOVEMENT_IDX[eid];
+
+    POSITIONS[pcid].w = w;
+    POSITIONS[pcid].h = h;
+
+    entity_set_x(eid, x);
+    entity_set_y(eid, y);
+
+    MOVEMENTS[mcid].v = v;
+}
+
 void movement_update(int idx) {
     int pcid = ENTITY_POSITION_IDX[idx];
     int mcid = ENTITY_MOVEMENT_IDX[idx];
@@ -917,6 +902,12 @@ void collision_sync_range(int start, int end) {
         COLLISION_SDL_RECTS[csrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
     }
 };
+
+void health_init(int eid, int alive) {
+    int hcid  = ENTITY_HEALTH_IDX[eid];
+
+    HEALTHS[hcid].alive = alive;
+}
 
 int health_get_dead_range(int start, int end) {
     for (int eid = start; eid <= end; eid++) {

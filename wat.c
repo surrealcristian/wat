@@ -275,18 +275,6 @@ void bullet_init(int idx, float x, float y, int w, int h, int v) {
     HEALTHS[hcid].alive = 0;
 }
 
-void bullet_update(int idx) {
-    int eid  = BULLET_ENTITY_IDX[idx];
-    int pcid = ENTITY_POSITION_IDX[eid];
-    int mcid = ENTITY_MOVEMENT_IDX[eid];
-
-    float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
-    float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
-
-    entity_set_x(eid, x);
-    entity_set_y(eid, y);
-}
-
 void bullet_init_all(int w, int h, int v) {
     for (int i = 0; i < BULLET_MAX; i++) {
         bullet_init(i, 0, 0, w, h, v);
@@ -306,19 +294,6 @@ int bullet_get_free() {
     }
 
     return -1;
-}
-
-void bullet_update_all() {
-    for (int i = 0; i < BULLET_MAX; i++) {
-        int eid = BULLET_ENTITY_IDX[i];
-        int hcid = ENTITY_HEALTH_IDX[eid];
-
-        if (HEALTHS[hcid].alive == 0) {
-            continue;
-        }
-
-        bullet_update(i);
-    }
 }
 // bullet.c end
 
@@ -470,8 +445,11 @@ void player_update(int idx) {
         MOVEMENTS[mcid].vy = +1;
     }
 
-    player_set_x(idx, POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND));
-    player_set_y(idx, POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND));
+    float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
+    float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
+
+    player_set_x(idx, x);
+    player_set_y(idx, y);
 }
 
 void player_fire_update(int idx) {
@@ -544,15 +522,6 @@ void enemy_init(int idx, float x, float y, int w, int h, int v) {
     HEALTHS[hcid].alive = 0;
 }
 
-void enemy_update(int idx) {
-    int eid = ENEMY_ENTITY_IDX[idx];
-    int pcid = ENTITY_POSITION_IDX[eid];
-    int mcid = ENTITY_MOVEMENT_IDX[eid];
-
-    entity_set_x(eid, POSITIONS[pcid].x + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND));
-    entity_set_y(eid, POSITIONS[pcid].y + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND));
-}
-
 void enemy_init_all(int w, int h, int v) {
     ENEMY_MANAGER.time    = 0.0;
     ENEMY_MANAGER.spacing = 100.0;
@@ -605,19 +574,6 @@ void enemy_spawn() {
 
     MOVEMENTS[mcid].vx = ENEMY_VX;
     MOVEMENTS[mcid].vy = ENEMY_VY;
-}
-
-void enemy_update_all() {
-    for (int i = 0; i < ENEMY_MAX; i++) {
-        int eid = ENEMY_ENTITY_IDX[i];
-        int hcid = ENTITY_HEALTH_IDX[eid];
-
-        if (HEALTHS[hcid].alive == 0) {
-            continue;
-        }
-
-        enemy_update(i);
-    }
 }
 // enemy.c end
 
@@ -883,8 +839,9 @@ void hud_render(SDL_Renderer *renderer) {
 // in_game_state.c start
 void in_game_state_update() {
     player_update_all();
-    bullet_update_all();
-    enemy_update_all();
+
+    movement_update_range(BULLET_ENTITY_IDX[0], BULLET_ENTITY_IDX[BULLET_MAX - 1]);
+    movement_update_range(ENEMY_ENTITY_IDX[0], ENEMY_ENTITY_IDX[ENEMY_MAX - 1]);
 
     player_fire_update_all();
 
@@ -1107,6 +1064,29 @@ void entity_set_y(int idx, float value) {
 
     RENDER_SDL_RECTS[rsrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
     COLLISION_SDL_RECTS[csrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
+}
+
+void movement_update(int idx) {
+    int pcid = ENTITY_POSITION_IDX[idx];
+    int mcid = ENTITY_MOVEMENT_IDX[idx];
+
+    float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
+    float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
+
+    entity_set_x(idx, x);
+    entity_set_y(idx, y);
+}
+
+void movement_update_range(int start, int end) {
+    for (int eid = start; eid < end; eid++) {
+        int hcid = ENTITY_HEALTH_IDX[eid];
+
+        if (HEALTHS[hcid].alive == 0) {
+            continue;
+        }
+
+        movement_update(eid);
+    }
 }
 
 void entity_render_all(SDL_Renderer *renderer) {

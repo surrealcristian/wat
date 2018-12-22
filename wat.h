@@ -197,10 +197,6 @@ void bullet_init(int index, float x, float y, int w, int h, int v);
 void bullet_init_all(int w, int h, int v);
 
 int bullet_get_free();
-
-void bullet_update(int index);
-
-void bullet_update_all();
 // bullet.h end
 
 
@@ -239,9 +235,6 @@ void enemy_init_all(int w, int h, int v);
 int enemy_get_free();
 void enemy_try_spawn();
 void enemy_spawn();
-
-void enemy_update(int idx);
-void enemy_update_all();
 // enemy.h end
 
 
@@ -334,6 +327,10 @@ void input_update();
 
 void entity_set_x(int idx, float value);
 void entity_set_y(int idx, float value);
+
+void movement_update(int idx);
+
+void movement_update_range(int start, int end);
 
 void entity_render_all(SDL_Renderer *renderer);
 

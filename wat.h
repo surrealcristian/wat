@@ -12,24 +12,27 @@
 #define BULLET_PER_PLAYER          128
 #define BULLET_MAX                 (PLAYER_MAX * BULLET_PER_PLAYER)
 #define ENEMY_MAX                  16
-#define ENTITY_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+#define PARTICLE_MAX               128
+#define ENTITY_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
 
-#define POSITION_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+#define POSITION_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
 
-#define MOVEMENT_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+#define MOVEMENT_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
 
-#define HEALTH_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
-
-#define RENDER_SDL_RECT_PER_PLAYER 1
-#define RENDER_SDL_RECT_PER_BULLET 1
-#define RENDER_SDL_RECT_PER_ENEMY  1
-#define RENDER_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
-#define RENDER_SDL_RECT_MAX        ((PLAYER_MAX * RENDER_SDL_RECT_PER_PLAYER) + (BULLET_MAX * RENDER_SDL_RECT_PER_BULLET) + (ENEMY_MAX * RENDER_SDL_RECT_PER_ENEMY))
-#define RENDER_SDL_RECT_PER_ENTITY 1
+#define HEALTH_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
 
 #define SHOOTING_MAX               PLAYER_MAX
 
 #define COLLISION_MAX              (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
+
+#define RENDER_SDL_RECT_PER_PLAYER   1
+#define RENDER_SDL_RECT_PER_BULLET   1
+#define RENDER_SDL_RECT_PER_ENEMY    1
+#define RENDER_SDL_RECT_PER_PARTICLE 1
+#define RENDER_MAX                   (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
+#define RENDER_SDL_RECT_MAX          ((PLAYER_MAX * RENDER_SDL_RECT_PER_PLAYER) + (BULLET_MAX * RENDER_SDL_RECT_PER_BULLET) + (ENEMY_MAX * RENDER_SDL_RECT_PER_ENEMY) + (PARTICLE_MAX * RENDER_SDL_RECT_PER_PARTICLE))
+
+
 
 
 struct PositionComponent {
@@ -174,7 +177,6 @@ struct Keyboard {
 #define ENEMY_VX +0
 #define ENEMY_VY +1
 
-#define PARTICLE_MAX 128
 #define PARTICLE_WIDTH 8
 #define PARTICLE_HEIGHT 8
 #define PARTICLE_V 1024
@@ -239,20 +241,6 @@ void enemy_spawn();
 void particle_init(int i, float x, float y, int w, int h, int v);
 
 void particle_init_all(int w, int h, int v);
-
-void particle_set_x(int i, float value);
-
-void particle_set_y(int i, float value);
-
-int particle_get_free();
-
-void particle_update(int i);
-
-void particle_update_all();
-
-void particle_render(int i, SDL_Renderer *renderer);
-
-void particle_render_all(SDL_Renderer *renderer);
 // particle.h end
 
 

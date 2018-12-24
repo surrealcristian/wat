@@ -4,7 +4,7 @@ P=wat
 #SOURCES=wat.c tinymt32.c
 OBJECTS=tinymt32.o wat.o
 
-CFLAGS=-Wall -O3 `sdl2-config --cflags`
+CFLAGS=-Wall -std=c99 -pedantic -O3 `sdl2-config --cflags`
 #CFLAGS=-Wall -g -O0 `sdl2-config --cflags` # CFLAGS for debug
 
 LDLIBS=-lm `sdl2-config --libs`

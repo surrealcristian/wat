@@ -1,13 +1,13 @@
 #include "wat.h"
 
-// entity
+/* entity */
 
+struct Entity             ENTITIES[ENTITY_MAX];
 struct PositionComponent  POSITIONS[POSITION_MAX];
 struct MovementComponent  MOVEMENTS[MOVEMENT_MAX];
 struct RenderComponent    RENDERS[RENDER_MAX];
 struct HealthComponent    HEALTHS[HEALTH_MAX];
 struct ShootingComponent  SHOOTINGS[SHOOTING_MAX];
-struct CollisionComponent COLLISIONS[COLLISION_MAX];
 
 SDL_Rect RENDER_SDL_RECTS[RENDER_SDL_RECT_MAX];
 SDL_Rect COLLISION_SDL_RECTS[COLLISION_MAX];
@@ -30,7 +30,7 @@ int PARTICLE_ENTITY_IDX[PARTICLE_MAX];
 int PLAYER_BULLET_IDX[PLAYER_MAX][BULLET_PER_PLAYER];
 
 
-// others
+/* others */
 
 tinymt32_t          TINYMT_STATE;
 SDL_Event           EVENT;
@@ -45,7 +45,7 @@ struct Game         GAME;
 
 
 
-// util.c start
+/* util.c start */
 double performance_counters_to_ms(Uint64 start, Uint64 end) {
     double ms = (double)((end - start) * 1000) / SDL_GetPerformanceFrequency();
 
@@ -62,10 +62,10 @@ int rand_n( tinymt32_t *state, int n) {
 
     return ret;
 }
-// util.c end
+/* util.c end */
 
 
-// text.c start
+/* text.c start */
 float RUNE_X_POSITIONS[25] = { 0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4, };
 float RUNE_Y_POSITIONS[25] = { 0, 0, 0, 0, 0,    1, 1, 1, 1, 1,    2, 2, 2, 2, 2,    3, 3, 3, 3, 3,    4, 4, 4, 4, 4, };
 
@@ -167,7 +167,9 @@ void text_render_rune(
     float        x,
     float        y
 ) {
-    for (int i = 0; i < 25; i++) {
+    int i;
+
+    for (i = 0; i < 25; i++) {
         if (RUNES[rune][i] == 0) {
             continue;
         }
@@ -185,8 +187,11 @@ void text_render(struct Text  *self, SDL_Renderer *renderer) {
     int   rune_h_px       = RUNE_H * self->size_px;
     int   rune_space_w_px = RUNE_SPACE_W * self->size_px;
     float text_w_px       = (self->value_len * rune_w_px) + ((self->value_len - 1) * rune_space_w_px);
-    float rune_x          = 0;
-    float rune_y          = 0;
+    float rune_x          = 0.0;
+    float rune_y          = 0.0;
+    int   i;
+    int   c;
+    int   idx;
 
     if (self->align == TEXT_ALIGN_LEFT) {
         rune_x = self->x;
@@ -198,10 +203,9 @@ void text_render(struct Text  *self, SDL_Renderer *renderer) {
 
     rune_y = self->y - (rune_h_px / 2);
 
-    int idx;
 
-    for (int i = 0; self->value[i] != '\0'; i++) {
-        int c = self->value[i];
+    for (i = 0; self->value[i] != '\0'; i++) {
+        c = self->value[i];
 
         if (c >= '0' && c <= '9') {
             idx = c - '0';
@@ -216,51 +220,19 @@ void text_render(struct Text  *self, SDL_Renderer *renderer) {
         rune_x += rune_w_px + rune_space_w_px;
     }
 }
-// text.c end
+/* text.c end */
 
 
-// config.c start
+/* config.c start */
 float PLAYER_BULLETS_OFFSET_X[5] = { +0.00, -0.75, +0.75, -1.50, +1.50 };
 float PLAYER_BULLETS_OFFSET_Y[5] = { -1.00, -0.50, -0.50, +0.00, +0.00 };
 
 float EXPLOSION_PARTICLES_VX[4] = { -1.00, +1.00, -1.00, +1.00 };
 float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
-// config.c end
+/* config.c end */
 
 
-// player.c start
-void player_set_x(int idx, float value) {
-    int eid   = PLAYER_ENTITY_IDX[idx];
-    int pcid  = ENTITY_POSITION_IDX[eid];
-
-    float x_min = 0 + POSITIONS[pcid].w / 2;
-    float x_max = WINDOW_W - POSITIONS[pcid].w / 2;
-
-    if (value < x_min) {
-        value = x_min;
-    } else if (value > x_max) {
-        value = x_max;
-    }
-
-    POSITIONS[pcid].x = value;
-}
-
-void player_set_y(int idx, float value) {
-    int eid   = PLAYER_ENTITY_IDX[idx];
-    int pcid  = ENTITY_POSITION_IDX[eid];
-
-    float y_min = 0 + POSITIONS[pcid].h / 2;
-    float y_max = WINDOW_H - POSITIONS[pcid].h / 2;
-
-    if (value < y_min) {
-        value = y_min;
-    } else if (value > y_max) {
-        value = y_max;
-    }
-
-    POSITIONS[pcid].y = value;
-}
-
+/* player.c start */
 void player_on_button_a_keydown(int idx) {
     int eid = PLAYER_ENTITY_IDX[idx];
     int sid = ENTITY_SHOOTING_IDX[eid];
@@ -282,23 +254,32 @@ void player_fire(int idx) {
     int pcid = ENTITY_POSITION_IDX[eid];
     int sid = ENTITY_SHOOTING_IDX[eid];
 
-    for (int i = 0; i < SHOOTINGS[sid].bullets_n; i++) {
-        int beid = health_get_dead_range(BULLET_ENTITY_IDX[0], BULLET_ENTITY_IDX[BULLET_MAX - 1]);
+    int i;
+
+    int beid;
+    int bmcid;
+    int bhcid;
+
+    float x;
+    float y;
+
+    for (i = 0; i < SHOOTINGS[sid].bullets_n; i++) {
+        beid = health_get_dead_range(BULLET_ENTITY_IDX[0], BULLET_ENTITY_IDX[BULLET_MAX - 1]);
 
         if (beid == -1) {
             return;
         }
 
-        int bmcid = ENTITY_MOVEMENT_IDX[beid];
-        int bhcid = ENTITY_HEALTH_IDX[beid];
+        bmcid = ENTITY_MOVEMENT_IDX[beid];
+        bhcid = ENTITY_HEALTH_IDX[beid];
 
         HEALTHS[bhcid].alive = 1;
 
-        float x = POSITIONS[pcid].x + POSITIONS[pcid].w * PLAYER_BULLETS_OFFSET_X[i];
-        float y = POSITIONS[pcid].y + POSITIONS[pcid].h * PLAYER_BULLETS_OFFSET_Y[i];
+        x = POSITIONS[pcid].x + POSITIONS[pcid].w * PLAYER_BULLETS_OFFSET_X[i];
+        y = POSITIONS[pcid].y + POSITIONS[pcid].h * PLAYER_BULLETS_OFFSET_Y[i];
 
-        entity_set_x(beid, x);
-        entity_set_y(beid, y);
+        position_set_x(beid, x);
+        position_set_y(beid, y);
 
         MOVEMENTS[bmcid].vx = PLAYER_BULLETS_VX;
         MOVEMENTS[bmcid].vy = PLAYER_BULLETS_VY;
@@ -310,30 +291,14 @@ void player_update(int idx) {
     int pcid = ENTITY_POSITION_IDX[eid];
     int mcid = ENTITY_MOVEMENT_IDX[eid];
 
-    MOVEMENTS[mcid].vx = 0;
-    MOVEMENTS[mcid].vy = 0;
+    float x;
+    float y;
 
-    if (KEYBOARD.right) {
-        MOVEMENTS[mcid].vx = +1;
-    }
+    x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
+    y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
 
-    if (KEYBOARD.left) {
-        MOVEMENTS[mcid].vx = -1;
-    }
-
-    if (KEYBOARD.up) {
-        MOVEMENTS[mcid].vy = -1;
-    }
-
-    if (KEYBOARD.down) {
-        MOVEMENTS[mcid].vy = +1;
-    }
-
-    float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
-    float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
-
-    player_set_x(idx, x);
-    player_set_y(idx, y);
+    position_player_set_x(eid, x);
+    position_player_set_y(eid, y);
 }
 
 void player_fire_update(int idx) {
@@ -341,7 +306,7 @@ void player_fire_update(int idx) {
     int sid = ENTITY_SHOOTING_IDX[eid];
 
     if (KEYBOARD.z) {
-        SHOOTINGS[sid].fire_time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
+        SHOOTINGS[sid].fire_time += MS_PER_UPDATE; /* TODO: move MS_PER_UPDATE to arguments */
     }
 
     if (SHOOTINGS[sid].fire_time >= SHOOTINGS[sid].fire_spacing) {
@@ -351,9 +316,13 @@ void player_fire_update(int idx) {
 }
 
 void player_update_all() {
-    for (int i = 0; i < PLAYER_MAX; i++) {
-        int eid = PLAYER_ENTITY_IDX[i];
-        int hcid = ENTITY_HEALTH_IDX[eid];
+    int i;
+    int eid;
+    int hcid;
+
+    for (i = 0; i < PLAYER_MAX; i++) {
+        eid = PLAYER_ENTITY_IDX[i];
+        hcid = ENTITY_HEALTH_IDX[eid];
 
         if (HEALTHS[hcid].alive == 0) {
             continue;
@@ -364,9 +333,13 @@ void player_update_all() {
 }
 
 void player_fire_update_all() {
-    for (int i = 0; i < PLAYER_MAX; i++) {
-        int eid = PLAYER_ENTITY_IDX[i];
-        int hcid = ENTITY_HEALTH_IDX[eid];
+    int i;
+    int eid;
+    int hcid;
+
+    for (i = 0; i < PLAYER_MAX; i++) {
+        eid = PLAYER_ENTITY_IDX[i];
+        hcid = ENTITY_HEALTH_IDX[eid];
 
         if (HEALTHS[hcid].alive == 0) {
             continue;
@@ -375,12 +348,12 @@ void player_fire_update_all() {
         player_fire_update(i);
     }
 }
-// player.c end
+/* player.c end */
 
 
-// enemy.c start
+/* enemy.c start */
 void enemy_try_spawn() {
-    ENEMY_MANAGER.time += MS_PER_UPDATE; //TODO: move MS_PER_UPDATE to arguments
+    ENEMY_MANAGER.time += MS_PER_UPDATE; /* TODO: move MS_PER_UPDATE to arguments */
 
     if (ENEMY_MANAGER.time >= ENEMY_MANAGER.spacing) {
         enemy_spawn();
@@ -390,49 +363,59 @@ void enemy_try_spawn() {
 
 void enemy_spawn() {
     int eid = health_get_dead_range(ENEMY_ENTITY_IDX[0], ENEMY_ENTITY_IDX[ENEMY_MAX - 1]);
+    int pcid;
+    int hcid;
+    int mcid;
 
     if (eid == -1) {
         return;
     }
 
-    int pcid = ENTITY_POSITION_IDX[eid];
-    int hcid = ENTITY_HEALTH_IDX[eid];
-    int mcid = ENTITY_MOVEMENT_IDX[eid];
+    pcid = ENTITY_POSITION_IDX[eid];
+    hcid = ENTITY_HEALTH_IDX[eid];
+    mcid = ENTITY_MOVEMENT_IDX[eid];
 
     HEALTHS[hcid].alive = 1;
 
-    entity_set_x(eid, rand_n(&TINYMT_STATE, WINDOW_W + 1));
-    entity_set_y(eid, 0 - POSITIONS[pcid].h);
+    position_set_x(eid, rand_n(&TINYMT_STATE, WINDOW_W + 1));
+    position_set_y(eid, 0 - POSITIONS[pcid].h);
 
     MOVEMENTS[mcid].vx = ENEMY_VX;
     MOVEMENTS[mcid].vy = ENEMY_VY;
 }
-// enemy.c end
+/* enemy.c end */
 
 
-// score.c start
+/* score.c start */
 void score_init() {
     SCORE.value = 0;
 }
-// score.c end
+/* score.c end */
 
 
-// collision.c start
+/* collision.c start */
 void collision_player_vs_enemies() {
     int peid  = PLAYER_ENTITY_IDX[0];
     int pccid = ENTITY_COLLISION_IDX[peid];
     int phcid = ENTITY_HEALTH_IDX[peid];
     int csrid = COLLISION_SDL_RECT_IDX[pccid];
 
+    int i;
+
+    int eeid;
+    int ehcid;
+    int eccid;
+    int esrid;
+
     if (HEALTHS[phcid].alive == 0) {
         return;
     }
 
-    for (int i = 0; i < ENEMIES_MAX; i++) {
-        int eeid  = ENEMY_ENTITY_IDX[i];
-        int ehcid = ENTITY_HEALTH_IDX[eeid];
-        int eccid = ENTITY_COLLISION_IDX[eeid];
-        int esrid = COLLISION_SDL_RECT_IDX[eccid];
+    for (i = 0; i < ENEMIES_MAX; i++) {
+        eeid  = ENEMY_ENTITY_IDX[i];
+        ehcid = ENTITY_HEALTH_IDX[eeid];
+        eccid = ENTITY_COLLISION_IDX[eeid];
+        esrid = COLLISION_SDL_RECT_IDX[eccid];
 
         if (HEALTHS[ehcid].alive == 0) {
             continue;
@@ -446,22 +429,37 @@ void collision_player_vs_enemies() {
 }
 
 void collision_enemies_vs_player_bullets() {
-    for (int i = 0; i < ENEMIES_MAX; i++) {
-        int eeid  = ENEMY_ENTITY_IDX[i];
-        int epcid = ENTITY_POSITION_IDX[eeid];
-        int ehcid = ENTITY_HEALTH_IDX[eeid];
-        int eccid = ENTITY_COLLISION_IDX[eeid];
-        int esrid = COLLISION_SDL_RECT_IDX[eccid];
+    int i;
+
+    int eeid;
+    int epcid;
+    int ehcid;
+    int eccid;
+    int esrid;
+
+    int j;
+
+    int beid;
+    int bpcid;
+    int bhcid;
+    int bsrid;
+
+    for (i = 0; i < ENEMIES_MAX; i++) {
+        eeid  = ENEMY_ENTITY_IDX[i];
+        epcid = ENTITY_POSITION_IDX[eeid];
+        ehcid = ENTITY_HEALTH_IDX[eeid];
+        eccid = ENTITY_COLLISION_IDX[eeid];
+        esrid = COLLISION_SDL_RECT_IDX[eccid];
 
         if (HEALTHS[ehcid].alive == 0) {
             continue;
         }
 
-        for (int j = 0; j < BULLET_PER_PLAYER; j++) {
-            int beid  = BULLET_ENTITY_IDX[j];
-            int bpcid = ENTITY_POSITION_IDX[beid];
-            int bhcid = ENTITY_HEALTH_IDX[beid];
-            int bsrid = COLLISION_SDL_RECT_IDX[bpcid];
+        for (j = 0; j < BULLET_PER_PLAYER; j++) {
+            beid  = BULLET_ENTITY_IDX[j];
+            bpcid = ENTITY_POSITION_IDX[beid];
+            bhcid = ENTITY_HEALTH_IDX[beid];
+            bsrid = COLLISION_SDL_RECT_IDX[bpcid];
 
             if (HEALTHS[bhcid].alive == 0) {
                 continue;
@@ -487,18 +485,24 @@ void collision_update() {
 }
 
 void collision_make_explosion(float x, float y) {
-    for (int i = 0; i < EXPLOSION_PARTICLES_N; i++) {
-        int eid = health_get_dead_range(PARTICLE_ENTITY_IDX[0], PARTICLE_ENTITY_IDX[PARTICLE_MAX - 1]);
+    int i;
+
+    int eid;
+    int hcid;
+    int mcid;
+
+    for (i = 0; i < EXPLOSION_PARTICLES_N; i++) {
+        eid = health_get_dead_range(PARTICLE_ENTITY_IDX[0], PARTICLE_ENTITY_IDX[PARTICLE_MAX - 1]);
 
         if (eid == -1) {
             return;
         }
 
-        int hcid = ENTITY_HEALTH_IDX[eid];
-        int mcid = ENTITY_MOVEMENT_IDX[eid];
+        hcid = ENTITY_HEALTH_IDX[eid];
+        mcid = ENTITY_MOVEMENT_IDX[eid];
 
-        entity_set_x(eid, x);
-        entity_set_y(eid, y);
+        position_set_x(eid, x);
+        position_set_y(eid, y);
 
         MOVEMENTS[mcid].vx = EXPLOSION_PARTICLES_VX[i];
         MOVEMENTS[mcid].vy = EXPLOSION_PARTICLES_VY[i];
@@ -506,10 +510,10 @@ void collision_make_explosion(float x, float y) {
         HEALTHS[hcid].alive = 1;
     }
 }
-// collision.c end
+/* collision.c end */
 
 
-// welcome_state.c start
+/* welcome_state.c start */
 void welcome_state_update() {
 
 }
@@ -517,10 +521,10 @@ void welcome_state_update() {
 void welcome_state_render(SDL_Renderer *renderer) {
     text_render(&WELCOME_TEXT, renderer);
 }
-// welcome_state.c end
+/* welcome_state.c end */
 
 
-// hud.c start
+/* hud.c start */
 char HUD_SCORE_TEXT[HUD_SCORE_TEXT_BUFSIZE];
 
 void hud_update() {
@@ -532,11 +536,33 @@ void hud_update() {
 void hud_render(SDL_Renderer *renderer) {
     text_render(&HUD_TEXT, renderer);
 }
-// hud.c end
+/* hud.c end */
 
 
-// in_game_state.c start
+/* in_game_state.c start */
 void in_game_state_update() {
+    int eid = PLAYER_ENTITY_IDX[0];
+    int mcid = ENTITY_MOVEMENT_IDX[eid];
+
+    MOVEMENTS[mcid].vx = 0;
+    MOVEMENTS[mcid].vy = 0;
+
+    if (KEYBOARD.right) {
+        MOVEMENTS[mcid].vx = +1;
+    }
+
+    if (KEYBOARD.left) {
+        MOVEMENTS[mcid].vx = -1;
+    }
+
+    if (KEYBOARD.up) {
+        MOVEMENTS[mcid].vy = -1;
+    }
+
+    if (KEYBOARD.down) {
+        MOVEMENTS[mcid].vy = +1;
+    }
+
     player_update_all();
 
     movement_update_range(BULLET_ENTITY_IDX[0], BULLET_ENTITY_IDX[BULLET_MAX - 1]);
@@ -569,10 +595,10 @@ void in_game_state_render(SDL_Renderer *renderer) {
 
     hud_render(renderer);
 }
-// in_game_state.c end
+/* in_game_state.c end */
 
 
-// pause_state.c start
+/* pause_state.c start */
 void pause_state_update() {
 
 }
@@ -592,10 +618,10 @@ void pause_state_render(SDL_Renderer *renderer) {
 
     text_render(&PAUSE_TEXT, renderer);
 }
-// pause_state.c end
+/* pause_state.c end */
 
 
-// game.c start
+/* game.c start */
 void game_init() {
     GAME.state = STATE_WELCOME;
 }
@@ -603,16 +629,23 @@ void game_init() {
 void game_run(SDL_Renderer *renderer) {
     int keep_running = 1;
 
-    Uint64 previous = SDL_GetPerformanceCounter();
+    Uint64 debug_start;
+    Uint64 debug_end;
+    double debug_elapsed;
+
+    Uint64 current;
+    double elapsed;
     double lag = 0.0;
 
-    while (keep_running) {
-        // -----
-        Uint64 debug_start = SDL_GetPerformanceCounter();
-        // -----
+    Uint64 previous = SDL_GetPerformanceCounter();
 
-        Uint64 current = SDL_GetPerformanceCounter();
-        double elapsed = performance_counters_to_ms(previous, current);
+    while (keep_running) {
+        /* ----- */
+        debug_start = SDL_GetPerformanceCounter();
+        /* ----- */
+
+        current = SDL_GetPerformanceCounter();
+        elapsed = performance_counters_to_ms(previous, current);
 
         previous = current;
         lag += elapsed;
@@ -637,9 +670,9 @@ void game_run(SDL_Renderer *renderer) {
             lag -= MS_PER_UPDATE;
         }
 
-        // RENDER
+        /* RENDER */
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // grey
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
         if (GAME.state == STATE_WELCOME) {
@@ -652,19 +685,19 @@ void game_run(SDL_Renderer *renderer) {
 
         SDL_RenderPresent(renderer);
 
-        // -----
-        Uint64 debug_end = SDL_GetPerformanceCounter();
-        double debug_elapsed = performance_counters_to_ms(debug_start, debug_end);
-        //SDL_Log("frame time: %f ms", debug_elapsed); //TODO
-        // -----
+        /* ----- */
+        debug_end = SDL_GetPerformanceCounter();
+        debug_elapsed = performance_counters_to_ms(debug_start, debug_end);
+        /* SDL_Log("frame time: %f ms", debug_elapsed); */
+        /* ----- */
 
-        //SDL_Delay(SLEEP_MS);
+        /* SDL_Delay(SLEEP_MS); */
     }
 }
-// game.c end
+/* game.c end */
 
 
-// input.c start
+/* input.c start */
 void input_update() {
     int sym;
 
@@ -722,11 +755,10 @@ void input_update() {
         }
     }
 }
-// input.c end
+/* input.c end */
 
 
-
-void entity_set_x(int idx, float value) {
+void position_set_x(int idx, float value) {
     int pcid  = ENTITY_POSITION_IDX[idx];
     int hcid  = ENTITY_HEALTH_IDX[idx];
 
@@ -746,7 +778,7 @@ void entity_set_x(int idx, float value) {
     POSITIONS[pcid].x = value;
 }
 
-void entity_set_y(int idx, float value) {
+void position_set_y(int idx, float value) {
     int pcid  = ENTITY_POSITION_IDX[idx];
     int hcid  = ENTITY_HEALTH_IDX[idx];
 
@@ -766,6 +798,36 @@ void entity_set_y(int idx, float value) {
     POSITIONS[pcid].y = value;
 }
 
+void position_player_set_x(int eid, float value) {
+    int pcid  = ENTITY_POSITION_IDX[eid];
+
+    float x_min = 0 + POSITIONS[pcid].w / 2;
+    float x_max = WINDOW_W - POSITIONS[pcid].w / 2;
+
+    if (value < x_min) {
+        value = x_min;
+    } else if (value > x_max) {
+        value = x_max;
+    }
+
+    POSITIONS[pcid].x = value;
+}
+
+void position_player_set_y(int eid, float value) {
+    int pcid  = ENTITY_POSITION_IDX[eid];
+
+    float y_min = 0 + POSITIONS[pcid].h / 2;
+    float y_max = WINDOW_H - POSITIONS[pcid].h / 2;
+
+    if (value < y_min) {
+        value = y_min;
+    } else if (value > y_max) {
+        value = y_max;
+    }
+
+    POSITIONS[pcid].y = value;
+}
+
 void movement_init(int eid, float x, float y, int w, int h, int v) {
     int pcid  = ENTITY_POSITION_IDX[eid];
     int mcid  = ENTITY_MOVEMENT_IDX[eid];
@@ -773,8 +835,8 @@ void movement_init(int eid, float x, float y, int w, int h, int v) {
     POSITIONS[pcid].w = w;
     POSITIONS[pcid].h = h;
 
-    entity_set_x(eid, x);
-    entity_set_y(eid, y);
+    position_set_x(eid, x);
+    position_set_y(eid, y);
 
     MOVEMENTS[mcid].v = v;
 }
@@ -786,13 +848,16 @@ void movement_update(int idx) {
     float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
     float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
 
-    entity_set_x(idx, x);
-    entity_set_y(idx, y);
+    position_set_x(idx, x);
+    position_set_y(idx, y);
 }
 
 void movement_update_range(int start, int end) {
-    for (int eid = start; eid <= end; eid++) {
-        int hcid = ENTITY_HEALTH_IDX[eid];
+    int eid;
+    int hcid;
+
+    for (eid = start; eid <= end; eid++) {
+        hcid = ENTITY_HEALTH_IDX[eid];
 
         if (HEALTHS[hcid].alive == 0) {
             continue;
@@ -803,16 +868,22 @@ void movement_update_range(int start, int end) {
 }
 
 void collision_sync_range(int start, int end) {
-    for (int eid = start; eid <= end; eid++) {
-        int hcid  = ENTITY_HEALTH_IDX[eid];
+    int eid;
+    int hcid;
+    int ccid;
+    int pcid;
+    int csrid;
+
+    for (eid = start; eid <= end; eid++) {
+        hcid  = ENTITY_HEALTH_IDX[eid];
 
         if (HEALTHS[hcid].alive == 0) {
             continue;
         }
 
-        int ccid  = ENTITY_COLLISION_IDX[eid];
-        int pcid  = ENTITY_POSITION_IDX[eid];
-        int csrid = COLLISION_SDL_RECT_IDX[ccid];
+        ccid  = ENTITY_COLLISION_IDX[eid];
+        pcid  = ENTITY_POSITION_IDX[eid];
+        csrid = COLLISION_SDL_RECT_IDX[ccid];
 
         COLLISION_SDL_RECTS[csrid].w = POSITIONS[pcid].w;
         COLLISION_SDL_RECTS[csrid].h = POSITIONS[pcid].h;
@@ -820,7 +891,7 @@ void collision_sync_range(int start, int end) {
         COLLISION_SDL_RECTS[csrid].x = floor(POSITIONS[pcid].x - (POSITIONS[pcid].w / 2));
         COLLISION_SDL_RECTS[csrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
     }
-};
+}
 
 void health_init(int eid, int alive) {
     int hcid  = ENTITY_HEALTH_IDX[eid];
@@ -829,8 +900,11 @@ void health_init(int eid, int alive) {
 }
 
 int health_get_dead_range(int start, int end) {
-    for (int eid = start; eid <= end; eid++) {
-        int hcid = ENTITY_HEALTH_IDX[eid];
+    int eid;
+    int hcid;
+
+    for (eid = start; eid <= end; eid++) {
+        hcid = ENTITY_HEALTH_IDX[eid];
 
         if (HEALTHS[hcid].alive == 1) {
             continue;
@@ -843,16 +917,22 @@ int health_get_dead_range(int start, int end) {
 }
 
 void render_sync_range(int start, int end) {
-    for (int eid = start; eid <= end; eid++) {
-        int hcid  = ENTITY_HEALTH_IDX[eid];
+    int eid;
+    int hcid;
+    int rcid;
+    int pcid;
+    int rsrid;
+
+    for (eid = start; eid <= end; eid++) {
+        hcid  = ENTITY_HEALTH_IDX[eid];
 
         if (HEALTHS[hcid].alive == 0) {
             continue;
         }
 
-        int rcid  = ENTITY_RENDER_IDX[eid];
-        int pcid  = ENTITY_POSITION_IDX[eid];
-        int rsrid = RENDER_SDL_RECT_IDX[rcid];
+        rcid  = ENTITY_RENDER_IDX[eid];
+        pcid  = ENTITY_POSITION_IDX[eid];
+        rsrid = RENDER_SDL_RECT_IDX[rcid];
 
         RENDER_SDL_RECTS[rsrid].w = POSITIONS[pcid].w;
         RENDER_SDL_RECTS[rsrid].h = POSITIONS[pcid].h;
@@ -863,12 +943,16 @@ void render_sync_range(int start, int end) {
 }
 
 void render_update_range(int start, int end, SDL_Renderer *renderer) {
+    int eid;
     int ret = 0;
+    int hcid;
+    int rcid;
+    int srid;
 
-    for (int eid = start; eid <= end; eid++) {
-        int hcid = ENTITY_HEALTH_IDX[eid];
-        int rcid = ENTITY_RENDER_IDX[eid];
-        int srid = RENDER_SDL_RECT_IDX[rcid];
+    for (eid = start; eid <= end; eid++) {
+        hcid = ENTITY_HEALTH_IDX[eid];
+        rcid = ENTITY_RENDER_IDX[eid];
+        srid = RENDER_SDL_RECT_IDX[rcid];
 
         if (HEALTHS[hcid].alive == 0) {
             continue;
@@ -886,9 +970,10 @@ void render_update_range(int start, int end, SDL_Renderer *renderer) {
 
 
 void render_sdl_rect_idx_set_up() {
+    int i;
     int render_sdl_rect_i = 0;
 
-    for (int i = 0; i < RENDER_MAX; i++) {
+    for (i = 0; i < RENDER_MAX; i++) {
         RENDER_SDL_RECT_IDX[i] = render_sdl_rect_i;
 
         render_sdl_rect_i++;
@@ -896,9 +981,10 @@ void render_sdl_rect_idx_set_up() {
 }
 
 void collision_sdl_rect_idx_set_up() {
+    int i;
     int collision_sdl_rect_i = 0;
 
-    for (int i = 0; i < COLLISION_MAX; i++) {
+    for (i = 0; i < COLLISION_MAX; i++) {
         COLLISION_SDL_RECT_IDX[i] = collision_sdl_rect_i;
 
         collision_sdl_rect_i++;
@@ -906,18 +992,23 @@ void collision_sdl_rect_idx_set_up() {
 }
 
 void entity_set_up() {
-    render_sdl_rect_idx_set_up();
-    collision_sdl_rect_idx_set_up();
-
+    int i;
+    int j;
     int entity_i    = 0;
-    int position_i   = 0;
-    int movement_i   = 0;
-    int render_i  = 0;
+    int position_i  = 0;
+    int movement_i  = 0;
+    int render_i    = 0;
     int health_i    = 0;
     int shooting_i  = 0;
     int collision_i = 0;
+    int bullet_i    = 0;
 
-    for (int i = 0; i < PLAYER_MAX; i++) {
+    render_sdl_rect_idx_set_up();
+    collision_sdl_rect_idx_set_up();
+
+    for (i = 0; i < PLAYER_MAX; i++) {
+        ENTITIES[entity_i].type = ENTITY_TYPE_PLAYER;
+
         PLAYER_ENTITY_IDX[i] = entity_i;
 
         ENTITY_POSITION_IDX[entity_i]  = position_i;
@@ -936,7 +1027,9 @@ void entity_set_up() {
         collision_i++;
     }
 
-    for (int i = 0; i < ENEMY_MAX; i++) {
+    for (i = 0; i < ENEMY_MAX; i++) {
+        ENTITIES[entity_i].type = ENTITY_TYPE_ENEMY;
+
         ENEMY_ENTITY_IDX[i] = entity_i;
 
         ENTITY_POSITION_IDX[entity_i]  = position_i;
@@ -955,7 +1048,9 @@ void entity_set_up() {
         collision_i++;
     }
 
-    for (int i = 0; i < BULLET_MAX; i++) {
+    for (i = 0; i < BULLET_MAX; i++) {
+        ENTITIES[entity_i].type = ENTITY_TYPE_BULLET;
+
         BULLET_ENTITY_IDX[i] = entity_i;
 
         ENTITY_POSITION_IDX[entity_i]  = position_i;
@@ -973,17 +1068,19 @@ void entity_set_up() {
         collision_i++;
     }
 
-    int bullet_i = 0;
+    bullet_i = 0;
 
-    for (int i = 0; i < PLAYER_MAX; i++) {
-        for (int j = 0; j < BULLET_PER_PLAYER; j++) {
+    for (i = 0; i < PLAYER_MAX; i++) {
+        for (j = 0; j < BULLET_PER_PLAYER; j++) {
             PLAYER_BULLET_IDX[i][j] = bullet_i;
 
             bullet_i++;
         }
     }
 
-    for (int i = 0; i < PARTICLE_MAX; i++) {
+    for (i = 0; i < PARTICLE_MAX; i++) {
+        ENTITIES[entity_i].type = ENTITY_TYPE_PARTICLE;
+
         PARTICLE_ENTITY_IDX[i] = entity_i;
 
         ENTITY_POSITION_IDX[entity_i]  = position_i;
@@ -1003,13 +1100,20 @@ void entity_set_up() {
 
 
 int main(void) {
+    SDL_Window   *window;
+    SDL_Renderer *renderer;
+
+    int i;
+    int eid;
+    int sid;
+
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         SDL_Log("ERROR: SDL_Init() (%s)", SDL_GetError());
 
         return 1;
     }
 
-    SDL_Window *window = SDL_CreateWindow("WAT", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, 0);
+    window = SDL_CreateWindow("WAT", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, 0);
 
     if (window == NULL) {
         SDL_Log("ERROR: SDL_CreateWindow() (%s)", SDL_GetError());
@@ -1019,9 +1123,9 @@ int main(void) {
         return 1;
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(
+    renderer = SDL_CreateRenderer(
         window, -1,
-        //SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+        /* SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC */
         SDL_RENDERER_ACCELERATED
     );
 
@@ -1038,17 +1142,17 @@ int main(void) {
 
     rand_init(&TINYMT_STATE, time(NULL));
 
-    for (int i = 0; i < BULLET_MAX; i++) {
-        int eid = BULLET_ENTITY_IDX[i];
+    for (i = 0; i < BULLET_MAX; i++) {
+        eid = BULLET_ENTITY_IDX[i];
 
         movement_init(eid, 0, 0, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
         health_init(eid, 0);
     }
 
-    //init players
-    for (int i = 0; i < PLAYER_MAX; i++) {
-        int eid = PLAYER_ENTITY_IDX[i];
-        int sid = ENTITY_SHOOTING_IDX[eid];
+    /* init players */
+    for (i = 0; i < PLAYER_MAX; i++) {
+        eid = PLAYER_ENTITY_IDX[i];
+        sid = ENTITY_SHOOTING_IDX[eid];
 
         movement_init(eid, WINDOW_W / 2, WINDOW_H / 2, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_V);
         health_init(eid, 1);
@@ -1057,20 +1161,20 @@ int main(void) {
         SHOOTINGS[sid].fire_spacing = 128;
     }
 
-    //init enemies
+    /* init enemies */
     ENEMY_MANAGER.time    = 0.0;
     ENEMY_MANAGER.spacing = 100.0;
 
-    for (int i = 0; i < ENEMIES_MAX; i++) {
-        int eid = ENEMY_ENTITY_IDX[i];
+    for (i = 0; i < ENEMIES_MAX; i++) {
+        eid = ENEMY_ENTITY_IDX[i];
 
         movement_init(eid, 0, 0, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_V);
         health_init(eid, 0);
     }
 
-    // init particles
-    for (int i = 0; i < PARTICLE_MAX; i++) {
-        int eid   = PARTICLE_ENTITY_IDX[i];
+    /* init particles */
+    for (i = 0; i < PARTICLE_MAX; i++) {
+        eid = PARTICLE_ENTITY_IDX[i];
 
         movement_init(eid, 0, 0, PARTICLE_WIDTH, PARTICLE_HEIGHT, PARTICLE_V);
         health_init(eid, 0);

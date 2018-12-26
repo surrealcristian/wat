@@ -80,6 +80,7 @@ struct HealthComponent {
 double performance_counters_to_ms(Uint64 start, Uint64 end);
 void rand_init(tinymt32_t *state, uint32_t seed);
 int rand_n(tinymt32_t *state, int n);
+float fclamp(float f, float min, float max);
 /* util.h end */
 
 
@@ -286,19 +287,16 @@ void input_update();
 /* input.h end */
 
 
-void position_set_x(int idx, float value);
-void position_set_y(int idx, float value);
-void position_player_set_x(int idx, float value);
-void position_player_set_y(int idx, float value);
-
 void movement_init(int eid, float x, float y, int w, int h, int v);
+void movement_fclamp_player(int eid);
 void movement_update(int idx);
-
 void movement_update_range(int start, int end);
 
 void collision_sync_range(int start, int end);
 
 void health_init(int eid, int alive);
+void health_kill_if_out_of_range(int eid, float xmin, float xmax, float ymin, float ymax);
+void health_kill_if_out_of_map_range(int start, int end);
 int health_get_dead_range(int start, int end);
 
 void render_sync_range(int start, int end);

@@ -62,6 +62,10 @@ int rand_n( tinymt32_t *state, int n) {
 
     return ret;
 }
+
+float fclamp(float f, float min, float max) {
+    return fmin(fmax(f, min), max);
+}
 /* util.c end */
 
 
@@ -257,6 +261,7 @@ void player_fire(int idx) {
     int i;
 
     int beid;
+    int bpcid;
     int bmcid;
     int bhcid;
 
@@ -270,6 +275,7 @@ void player_fire(int idx) {
             return;
         }
 
+        bpcid = ENTITY_POSITION_IDX[beid];
         bmcid = ENTITY_MOVEMENT_IDX[beid];
         bhcid = ENTITY_HEALTH_IDX[beid];
 
@@ -278,8 +284,8 @@ void player_fire(int idx) {
         x = POSITIONS[pcid].x + POSITIONS[pcid].w * PLAYER_BULLETS_OFFSET_X[i];
         y = POSITIONS[pcid].y + POSITIONS[pcid].h * PLAYER_BULLETS_OFFSET_Y[i];
 
-        position_set_x(beid, x);
-        position_set_y(beid, y);
+        POSITIONS[bpcid].x = x;
+        POSITIONS[bpcid].y = y;
 
         MOVEMENTS[bmcid].vx = PLAYER_BULLETS_VX;
         MOVEMENTS[bmcid].vy = PLAYER_BULLETS_VY;
@@ -297,8 +303,8 @@ void player_update(int idx) {
     x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
     y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
 
-    position_player_set_x(eid, x);
-    position_player_set_y(eid, y);
+    POSITIONS[pcid].x = x;
+    POSITIONS[pcid].y = y;
 }
 
 void player_fire_update(int idx) {
@@ -377,8 +383,8 @@ void enemy_spawn() {
 
     HEALTHS[hcid].alive = 1;
 
-    position_set_x(eid, rand_n(&TINYMT_STATE, WINDOW_W + 1));
-    position_set_y(eid, 0 - POSITIONS[pcid].h);
+    POSITIONS[pcid].x = rand_n(&TINYMT_STATE, WINDOW_W + 1);
+    POSITIONS[pcid].y = 0 - POSITIONS[pcid].h;
 
     MOVEMENTS[mcid].vx = ENEMY_VX;
     MOVEMENTS[mcid].vy = ENEMY_VY;
@@ -488,6 +494,7 @@ void collision_make_explosion(float x, float y) {
     int i;
 
     int eid;
+    int pcid;
     int hcid;
     int mcid;
 
@@ -498,11 +505,12 @@ void collision_make_explosion(float x, float y) {
             return;
         }
 
-        hcid = ENTITY_HEALTH_IDX[eid];
+        pcid = ENTITY_POSITION_IDX[eid];
         mcid = ENTITY_MOVEMENT_IDX[eid];
+        hcid = ENTITY_HEALTH_IDX[eid];
 
-        position_set_x(eid, x);
-        position_set_y(eid, y);
+        POSITIONS[pcid].x = x;
+        POSITIONS[pcid].y = y;
 
         MOVEMENTS[mcid].vx = EXPLOSION_PARTICLES_VX[i];
         MOVEMENTS[mcid].vy = EXPLOSION_PARTICLES_VY[i];
@@ -541,26 +549,26 @@ void hud_render(SDL_Renderer *renderer) {
 
 /* in_game_state.c start */
 void in_game_state_update() {
-    int eid = PLAYER_ENTITY_IDX[0];
-    int mcid = ENTITY_MOVEMENT_IDX[eid];
+    int peid  = PLAYER_ENTITY_IDX[0];
+    int pmcid = ENTITY_MOVEMENT_IDX[peid];
 
-    MOVEMENTS[mcid].vx = 0;
-    MOVEMENTS[mcid].vy = 0;
+    MOVEMENTS[pmcid].vx = 0;
+    MOVEMENTS[pmcid].vy = 0;
 
     if (KEYBOARD.right) {
-        MOVEMENTS[mcid].vx = +1;
+        MOVEMENTS[pmcid].vx = +1;
     }
 
     if (KEYBOARD.left) {
-        MOVEMENTS[mcid].vx = -1;
+        MOVEMENTS[pmcid].vx = -1;
     }
 
     if (KEYBOARD.up) {
-        MOVEMENTS[mcid].vy = -1;
+        MOVEMENTS[pmcid].vy = -1;
     }
 
     if (KEYBOARD.down) {
-        MOVEMENTS[mcid].vy = +1;
+        MOVEMENTS[pmcid].vy = +1;
     }
 
     player_update_all();
@@ -570,6 +578,12 @@ void in_game_state_update() {
     movement_update_range(PARTICLE_ENTITY_IDX[0], PARTICLE_ENTITY_IDX[PARTICLE_MAX - 1]);
 
     player_fire_update_all();
+
+    movement_fclamp_player(peid);
+
+    health_kill_if_out_of_map_range(BULLET_ENTITY_IDX[0], BULLET_ENTITY_IDX[BULLET_MAX - 1]);
+    health_kill_if_out_of_map_range(ENEMY_ENTITY_IDX[0], ENEMY_ENTITY_IDX[ENEMY_MAX - 1]);
+    health_kill_if_out_of_map_range(PARTICLE_ENTITY_IDX[0], PARTICLE_ENTITY_IDX[BULLET_MAX - 1]);
 
     collision_sync_range(PLAYER_ENTITY_IDX[0], PLAYER_ENTITY_IDX[PLAYER_MAX - 1]);
     collision_sync_range(ENEMY_ENTITY_IDX[0], ENEMY_ENTITY_IDX[ENEMY_MAX - 1]);
@@ -758,76 +772,6 @@ void input_update() {
 /* input.c end */
 
 
-void position_set_x(int idx, float value) {
-    int pcid  = ENTITY_POSITION_IDX[idx];
-    int hcid  = ENTITY_HEALTH_IDX[idx];
-
-    float x_min = 0 - POSITIONS[pcid].w - 1;
-    float x_max = WINDOW_W + POSITIONS[pcid].w + 1;
-
-    if (value < x_min || value > x_max) {
-        HEALTHS[hcid].alive = 0;
-
-        value = 0;
-        POSITIONS[pcid].x = 0;
-        POSITIONS[pcid].y = 0;
-
-        return;
-    }
-
-    POSITIONS[pcid].x = value;
-}
-
-void position_set_y(int idx, float value) {
-    int pcid  = ENTITY_POSITION_IDX[idx];
-    int hcid  = ENTITY_HEALTH_IDX[idx];
-
-    float y_min = 0 - POSITIONS[pcid].h - 1;
-    float y_max = WINDOW_H + POSITIONS[pcid].h + 1;
-
-    if (value < y_min || value > y_max) {
-        HEALTHS[hcid].alive = 0;
-
-        value = 0;
-        POSITIONS[pcid].x = 0;
-        POSITIONS[pcid].y = 0;
-
-        return;
-    }
-
-    POSITIONS[pcid].y = value;
-}
-
-void position_player_set_x(int eid, float value) {
-    int pcid  = ENTITY_POSITION_IDX[eid];
-
-    float x_min = 0 + POSITIONS[pcid].w / 2;
-    float x_max = WINDOW_W - POSITIONS[pcid].w / 2;
-
-    if (value < x_min) {
-        value = x_min;
-    } else if (value > x_max) {
-        value = x_max;
-    }
-
-    POSITIONS[pcid].x = value;
-}
-
-void position_player_set_y(int eid, float value) {
-    int pcid  = ENTITY_POSITION_IDX[eid];
-
-    float y_min = 0 + POSITIONS[pcid].h / 2;
-    float y_max = WINDOW_H - POSITIONS[pcid].h / 2;
-
-    if (value < y_min) {
-        value = y_min;
-    } else if (value > y_max) {
-        value = y_max;
-    }
-
-    POSITIONS[pcid].y = value;
-}
-
 void movement_init(int eid, float x, float y, int w, int h, int v) {
     int pcid  = ENTITY_POSITION_IDX[eid];
     int mcid  = ENTITY_MOVEMENT_IDX[eid];
@@ -835,10 +779,29 @@ void movement_init(int eid, float x, float y, int w, int h, int v) {
     POSITIONS[pcid].w = w;
     POSITIONS[pcid].h = h;
 
-    position_set_x(eid, x);
-    position_set_y(eid, y);
+    POSITIONS[pcid].x = x;
+    POSITIONS[pcid].y = y;
 
     MOVEMENTS[mcid].v = v;
+}
+
+void movement_fclamp_player(int eid) {
+    int   pcid;
+    float x_min;
+    float x_max;
+    float y_min;
+    float y_max;
+
+    pcid  = ENTITY_POSITION_IDX[eid];
+
+    x_min = 0 + POSITIONS[pcid].w / 2;
+    x_max = WINDOW_W - POSITIONS[pcid].w / 2;
+    y_min = 0 + POSITIONS[pcid].h / 2;
+    y_max = WINDOW_H - POSITIONS[pcid].h / 2;
+
+    POSITIONS[pcid].x = fclamp(POSITIONS[pcid].x, x_min, x_max);
+    POSITIONS[pcid].y = fclamp(POSITIONS[pcid].y, y_min, y_max);
+
 }
 
 void movement_update(int idx) {
@@ -848,8 +811,8 @@ void movement_update(int idx) {
     float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
     float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
 
-    position_set_x(idx, x);
-    position_set_y(idx, y);
+    POSITIONS[pcid].x = x;
+    POSITIONS[pcid].y = y;
 }
 
 void movement_update_range(int start, int end) {
@@ -897,6 +860,49 @@ void health_init(int eid, int alive) {
     int hcid  = ENTITY_HEALTH_IDX[eid];
 
     HEALTHS[hcid].alive = alive;
+}
+
+void health_kill_if_out_of_range(int eid, float xmin, float xmax, float ymin, float ymax) {
+    int pcid  = ENTITY_POSITION_IDX[eid];
+    int hcid  = ENTITY_HEALTH_IDX[eid];
+
+    if (POSITIONS[pcid].x < xmin || POSITIONS[pcid].x > xmax) {
+        HEALTHS[hcid].alive = 0;
+
+        POSITIONS[pcid].x = 0;
+        POSITIONS[pcid].y = 0;
+
+        return;
+    }
+
+    if (POSITIONS[pcid].y < ymin || POSITIONS[pcid].y > ymax) {
+        HEALTHS[hcid].alive = 0;
+
+        POSITIONS[pcid].x = 0;
+        POSITIONS[pcid].y = 0;
+
+        return;
+    }
+}
+
+void health_kill_if_out_of_map_range(int start, int end) {
+    int   eid;
+    int   pcid;
+    float xmin;
+    float xmax;
+    float ymin;
+    float ymax;
+
+    for (eid = start; eid <= end; eid++) {
+        pcid  = ENTITY_POSITION_IDX[eid];
+
+        xmin = 0 - POSITIONS[pcid].w;
+        xmax = WINDOW_W + POSITIONS[pcid].w;
+        ymin = 0 - POSITIONS[pcid].h;
+        ymax = WINDOW_H + POSITIONS[pcid].h;
+
+        health_kill_if_out_of_range(eid, xmin, xmax, ymin, ymax);
+    }
 }
 
 int health_get_dead_range(int start, int end) {

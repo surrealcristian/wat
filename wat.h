@@ -203,9 +203,7 @@ void player_on_button_a_keydown(int index);
 void player_on_button_a_keyup(int index);
 void player_fire(int index);
 
-void player_update(int index);
 void player_fire_update(int index);
-void player_update_all();
 void player_fire_update_all();
 /* player.h end */
 

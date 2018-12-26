@@ -292,21 +292,6 @@ void player_fire(int idx) {
     }
 }
 
-void player_update(int idx) {
-    int eid = PLAYER_ENTITY_IDX[idx];
-    int pcid = ENTITY_POSITION_IDX[eid];
-    int mcid = ENTITY_MOVEMENT_IDX[eid];
-
-    float x;
-    float y;
-
-    x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
-    y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
-
-    POSITIONS[pcid].x = x;
-    POSITIONS[pcid].y = y;
-}
-
 void player_fire_update(int idx) {
     int eid = PLAYER_ENTITY_IDX[idx];
     int sid = ENTITY_SHOOTING_IDX[eid];
@@ -318,23 +303,6 @@ void player_fire_update(int idx) {
     if (SHOOTINGS[sid].fire_time >= SHOOTINGS[sid].fire_spacing) {
         player_fire(idx);
         SHOOTINGS[sid].fire_time = 0.0;
-    }
-}
-
-void player_update_all() {
-    int i;
-    int eid;
-    int hcid;
-
-    for (i = 0; i < PLAYER_MAX; i++) {
-        eid = PLAYER_ENTITY_IDX[i];
-        hcid = ENTITY_HEALTH_IDX[eid];
-
-        if (HEALTHS[hcid].alive == 0) {
-            continue;
-        }
-
-        player_update(i);
     }
 }
 
@@ -571,11 +539,7 @@ void in_game_state_update() {
         MOVEMENTS[pmcid].vy = +1;
     }
 
-    player_update_all();
-
-    movement_update_range(BULLET_ENTITY_IDX[0], BULLET_ENTITY_IDX[BULLET_MAX - 1]);
-    movement_update_range(ENEMY_ENTITY_IDX[0], ENEMY_ENTITY_IDX[ENEMY_MAX - 1]);
-    movement_update_range(PARTICLE_ENTITY_IDX[0], PARTICLE_ENTITY_IDX[PARTICLE_MAX - 1]);
+    movement_update_range(0, ENTITY_MAX - 1);
 
     player_fire_update_all();
 
@@ -808,8 +772,8 @@ void movement_update(int idx) {
     int pcid = ENTITY_POSITION_IDX[idx];
     int mcid = ENTITY_MOVEMENT_IDX[idx];
 
-    float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
-    float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[pcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
+    float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
+    float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
 
     POSITIONS[pcid].x = x;
     POSITIONS[pcid].y = y;

@@ -69,6 +69,27 @@ float fclamp(float f, float min, float max) {
 /* util.c end */
 
 
+/* vec2f.c start */
+void vec2f_set_xy(struct Vec2f *self, float x, float y) {
+    self->x = x;
+    self->y = y;
+}
+
+float vec2f_length(struct Vec2f *v) {
+    float length = sqrt((v->x * v->x) + (v->y * v->y));
+
+    return length;
+}
+
+void vec2f_normalize(struct Vec2f *self) {
+    float length = vec2f_length(self);
+
+    self->x /= length;
+    self->y /= length;
+}
+/* vec2f.c end */
+
+
 /* text.c start */
 float RUNE_X_POSITIONS[25] = { 0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4,    0, 1, 2, 3, 4, };
 float RUNE_Y_POSITIONS[25] = { 0, 0, 0, 0, 0,    1, 1, 1, 1, 1,    2, 2, 2, 2, 2,    3, 3, 3, 3, 3,    4, 4, 4, 4, 4, };
@@ -233,6 +254,13 @@ float PLAYER_BULLETS_OFFSET_Y[5] = { -1.00, -0.50, -0.50, +0.00, +0.00 };
 
 float EXPLOSION_PARTICLES_VX[4] = { -1.00, +1.00, -1.00, +1.00 };
 float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
+
+struct Vec2f EXPLOSION_PARTICLES_DIR[4] = {
+    { .x = -1.0, .y = -1.0 },
+    { .x = +1.0, .y = -1.0 },
+    { .x = -1.0, .y = +1.0 },
+    { .x = +1.0, .y = +1.0 },
+};
 /* config.c end */
 
 
@@ -281,14 +309,13 @@ void player_fire(int idx) {
 
         HEALTHS[bhcid].alive = 1;
 
-        x = POSITIONS[pcid].x + POSITIONS[pcid].w * PLAYER_BULLETS_OFFSET_X[i];
-        y = POSITIONS[pcid].y + POSITIONS[pcid].h * PLAYER_BULLETS_OFFSET_Y[i];
+        x = POSITIONS[pcid].pos.x + POSITIONS[pcid].w * PLAYER_BULLETS_OFFSET_X[i];
+        y = POSITIONS[pcid].pos.y + POSITIONS[pcid].h * PLAYER_BULLETS_OFFSET_Y[i];
 
-        POSITIONS[bpcid].x = x;
-        POSITIONS[bpcid].y = y;
+        POSITIONS[bpcid].pos.x = x;
+        POSITIONS[bpcid].pos.y = y;
 
-        MOVEMENTS[bmcid].vx = PLAYER_BULLETS_VX;
-        MOVEMENTS[bmcid].vy = PLAYER_BULLETS_VY;
+        vec2f_set_xy(&MOVEMENTS[bmcid].dir, +0.0, -1.0);
     }
 }
 
@@ -351,11 +378,10 @@ void enemy_spawn() {
 
     HEALTHS[hcid].alive = 1;
 
-    POSITIONS[pcid].x = rand_n(&TINYMT_STATE, WINDOW_W + 1);
-    POSITIONS[pcid].y = 0 - POSITIONS[pcid].h;
+    POSITIONS[pcid].pos.x = rand_n(&TINYMT_STATE, WINDOW_W + 1);
+    POSITIONS[pcid].pos.y = 0 - POSITIONS[pcid].h;
 
-    MOVEMENTS[mcid].vx = ENEMY_VX;
-    MOVEMENTS[mcid].vy = ENEMY_VY;
+    vec2f_set_xy(&MOVEMENTS[mcid].dir, +0.0, +1.0);
 }
 /* enemy.c end */
 
@@ -385,7 +411,7 @@ void collision_player_vs_enemies() {
         return;
     }
 
-    for (i = 0; i < ENEMIES_MAX; i++) {
+    for (i = 0; i < ENEMY_MAX; i++) {
         eeid  = ENEMY_ENTITY_IDX[i];
         ehcid = ENTITY_HEALTH_IDX[eeid];
         eccid = ENTITY_COLLISION_IDX[eeid];
@@ -418,7 +444,7 @@ void collision_enemies_vs_player_bullets() {
     int bhcid;
     int bsrid;
 
-    for (i = 0; i < ENEMIES_MAX; i++) {
+    for (i = 0; i < ENEMY_MAX; i++) {
         eeid  = ENEMY_ENTITY_IDX[i];
         epcid = ENTITY_POSITION_IDX[eeid];
         ehcid = ENTITY_HEALTH_IDX[eeid];
@@ -443,7 +469,7 @@ void collision_enemies_vs_player_bullets() {
                 HEALTHS[ehcid].alive = 0;
                 HEALTHS[bhcid].alive = 0;
 
-                collision_make_explosion(POSITIONS[epcid].x, POSITIONS[epcid].y);
+                collision_make_explosion(POSITIONS[epcid].pos.x, POSITIONS[epcid].pos.y);
 
                 SCORE.value += ENEMY_SCORE;
 
@@ -477,11 +503,10 @@ void collision_make_explosion(float x, float y) {
         mcid = ENTITY_MOVEMENT_IDX[eid];
         hcid = ENTITY_HEALTH_IDX[eid];
 
-        POSITIONS[pcid].x = x;
-        POSITIONS[pcid].y = y;
+        POSITIONS[pcid].pos.x = x;
+        POSITIONS[pcid].pos.y = y;
 
-        MOVEMENTS[mcid].vx = EXPLOSION_PARTICLES_VX[i];
-        MOVEMENTS[mcid].vy = EXPLOSION_PARTICLES_VY[i];
+        MOVEMENTS[mcid].dir = EXPLOSION_PARTICLES_DIR[i];
 
         HEALTHS[hcid].alive = 1;
     }
@@ -520,24 +545,26 @@ void in_game_state_update() {
     int peid  = PLAYER_ENTITY_IDX[0];
     int pmcid = ENTITY_MOVEMENT_IDX[peid];
 
-    MOVEMENTS[pmcid].vx = 0;
-    MOVEMENTS[pmcid].vy = 0;
+    float tmp_x = +0.0;
+    float tmp_y = +0.0;
 
     if (KEYBOARD.right) {
-        MOVEMENTS[pmcid].vx = +1;
+        tmp_x += +1.0;
     }
 
     if (KEYBOARD.left) {
-        MOVEMENTS[pmcid].vx = -1;
+        tmp_x += -1.0;
     }
 
     if (KEYBOARD.up) {
-        MOVEMENTS[pmcid].vy = -1;
+        tmp_y += -1.0;
     }
 
     if (KEYBOARD.down) {
-        MOVEMENTS[pmcid].vy = +1;
+        tmp_y += +1.0;
     }
+
+    vec2f_set_xy(&MOVEMENTS[pmcid].dir, tmp_x, tmp_y);
 
     movement_update_range(0, ENTITY_MAX - 1);
 
@@ -743,10 +770,10 @@ void movement_init(int eid, float x, float y, int w, int h, int v) {
     POSITIONS[pcid].w = w;
     POSITIONS[pcid].h = h;
 
-    POSITIONS[pcid].x = x;
-    POSITIONS[pcid].y = y;
+    POSITIONS[pcid].pos.x = x;
+    POSITIONS[pcid].pos.y = y;
 
-    MOVEMENTS[mcid].v = v;
+    MOVEMENTS[mcid].vel = v;
 }
 
 void movement_fclamp_player(int eid) {
@@ -763,20 +790,21 @@ void movement_fclamp_player(int eid) {
     y_min = 0 + POSITIONS[pcid].h / 2;
     y_max = WINDOW_H - POSITIONS[pcid].h / 2;
 
-    POSITIONS[pcid].x = fclamp(POSITIONS[pcid].x, x_min, x_max);
-    POSITIONS[pcid].y = fclamp(POSITIONS[pcid].y, y_min, y_max);
+    POSITIONS[pcid].pos.x = fclamp(POSITIONS[pcid].pos.x, x_min, x_max);
+    POSITIONS[pcid].pos.y = fclamp(POSITIONS[pcid].pos.y, y_min, y_max);
 
 }
 
 void movement_update(int idx) {
     int pcid = ENTITY_POSITION_IDX[idx];
     int mcid = ENTITY_MOVEMENT_IDX[idx];
-
-    float x = POSITIONS[pcid].x + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vx / UPDATES_PER_SECOND);
-    float y = POSITIONS[pcid].y + (1.0 * MOVEMENTS[mcid].v * MOVEMENTS[mcid].vy / UPDATES_PER_SECOND);
-
-    POSITIONS[pcid].x = x;
-    POSITIONS[pcid].y = y;
+    
+    if (MOVEMENTS[pcid].dir.x != 0.0 || MOVEMENTS[pcid].dir.y != 0.0) {
+        vec2f_normalize(&MOVEMENTS[mcid].dir);
+        
+        POSITIONS[pcid].pos.x += (MOVEMENTS[mcid].vel * MOVEMENTS[mcid].dir.x) / UPDATES_PER_SECOND;
+        POSITIONS[pcid].pos.y += (MOVEMENTS[mcid].vel * MOVEMENTS[mcid].dir.y) / UPDATES_PER_SECOND;
+    }
 }
 
 void movement_update_range(int start, int end) {
@@ -815,8 +843,8 @@ void collision_sync_range(int start, int end) {
         COLLISION_SDL_RECTS[csrid].w = POSITIONS[pcid].w;
         COLLISION_SDL_RECTS[csrid].h = POSITIONS[pcid].h;
 
-        COLLISION_SDL_RECTS[csrid].x = floor(POSITIONS[pcid].x - (POSITIONS[pcid].w / 2));
-        COLLISION_SDL_RECTS[csrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
+        COLLISION_SDL_RECTS[csrid].x = floor(POSITIONS[pcid].pos.x - (POSITIONS[pcid].w / 2));
+        COLLISION_SDL_RECTS[csrid].y = floor(POSITIONS[pcid].pos.y - (POSITIONS[pcid].h / 2));
     }
 }
 
@@ -830,20 +858,20 @@ void health_kill_if_out_of_range(int eid, float xmin, float xmax, float ymin, fl
     int pcid  = ENTITY_POSITION_IDX[eid];
     int hcid  = ENTITY_HEALTH_IDX[eid];
 
-    if (POSITIONS[pcid].x < xmin || POSITIONS[pcid].x > xmax) {
+    if (POSITIONS[pcid].pos.x < xmin || POSITIONS[pcid].pos.x > xmax) {
         HEALTHS[hcid].alive = 0;
 
-        POSITIONS[pcid].x = 0;
-        POSITIONS[pcid].y = 0;
+        POSITIONS[pcid].pos.x = 0;
+        POSITIONS[pcid].pos.y = 0;
 
         return;
     }
 
-    if (POSITIONS[pcid].y < ymin || POSITIONS[pcid].y > ymax) {
+    if (POSITIONS[pcid].pos.y < ymin || POSITIONS[pcid].pos.y > ymax) {
         HEALTHS[hcid].alive = 0;
 
-        POSITIONS[pcid].x = 0;
-        POSITIONS[pcid].y = 0;
+        POSITIONS[pcid].pos.x = 0;
+        POSITIONS[pcid].pos.y = 0;
 
         return;
     }
@@ -907,8 +935,8 @@ void render_sync_range(int start, int end) {
         RENDER_SDL_RECTS[rsrid].w = POSITIONS[pcid].w;
         RENDER_SDL_RECTS[rsrid].h = POSITIONS[pcid].h;
 
-        RENDER_SDL_RECTS[rsrid].x = floor(POSITIONS[pcid].x - (POSITIONS[pcid].w / 2));
-        RENDER_SDL_RECTS[rsrid].y = floor(POSITIONS[pcid].y - (POSITIONS[pcid].h / 2));
+        RENDER_SDL_RECTS[rsrid].x = floor(POSITIONS[pcid].pos.x - (POSITIONS[pcid].w / 2));
+        RENDER_SDL_RECTS[rsrid].y = floor(POSITIONS[pcid].pos.y - (POSITIONS[pcid].h / 2));
     }
 }
 
@@ -1133,9 +1161,9 @@ int main(void) {
 
     /* init enemies */
     ENEMY_MANAGER.time    = 0.0;
-    ENEMY_MANAGER.spacing = 100.0;
+    ENEMY_MANAGER.spacing = 100.0; /* TODO: 100.0 */
 
-    for (i = 0; i < ENEMIES_MAX; i++) {
+    for (i = 0; i < ENEMY_MAX; i++) {
         eid = ENEMY_ENTITY_IDX[i];
 
         movement_init(eid, 0, 0, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_V);

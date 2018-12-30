@@ -7,10 +7,23 @@
 #include "SDL.h"
 #include "tinymt32.h"
 
+/* vec2f.h start */
+struct Vec2f {
+    float x;
+    float y;
+};
+
+void vec2f_set_xy(struct Vec2f *self, float x, float y);
+float vec2f_length(struct Vec2f *v);
+void vec2f_normalize(struct Vec2f *self);
+
+/* vec2f.h end */
+
 /* wat_dod.h start */
 #define PLAYER_MAX                 1
 #define BULLET_PER_PLAYER          128
 #define BULLET_MAX                 (PLAYER_MAX * BULLET_PER_PLAYER)
+/* TODO: 16 */
 #define ENEMY_MAX                  16
 #define PARTICLE_MAX               128
 #define ENTITY_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
@@ -44,16 +57,14 @@ struct Entity {
 };
 
 struct PositionComponent {
-    float x;
-    float y;
-    int   w;
-    int   h;
+    struct Vec2f pos;
+    int          w;
+    int          h;
 };
 
 struct MovementComponent {
-    int   v;
-    int   vx;
-    int   vy;
+    struct Vec2f dir;
+    int          vel;
 };
 
 struct RenderComponent {
@@ -77,6 +88,8 @@ struct HealthComponent {
 
 
 /* util.h start */
+#define PI 3.14159265358979323846264338327950288
+
 double performance_counters_to_ms(Uint64 start, Uint64 end);
 void rand_init(tinymt32_t *state, uint32_t seed);
 int rand_n(tinymt32_t *state, int n);
@@ -175,7 +188,6 @@ struct Keyboard {
 #define PLAYER_BULLETS_VX +0
 #define PLAYER_BULLETS_VY -1
 
-#define ENEMIES_MAX 16
 #define ENEMY_WIDTH 32
 #define ENEMY_HEIGHT 32
 #define ENEMY_V 128

@@ -16,75 +16,43 @@ struct Vec2f {
 void vec2f_set_xy(struct Vec2f *self, float x, float y);
 float vec2f_length(struct Vec2f *v);
 void vec2f_normalize(struct Vec2f *self);
-
 /* vec2f.h end */
 
-/* wat_dod.h start */
+/* entity start */
 #define PLAYER_MAX                 1
 #define BULLET_PER_PLAYER          128
 #define BULLET_MAX                 (PLAYER_MAX * BULLET_PER_PLAYER)
 /* TODO: 16 */
-#define ENEMY_MAX                  16
+#define ENEMY_MAX                  8192
 #define PARTICLE_MAX               128
-#define ENTITY_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
-
-#define POSITION_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
-
-#define MOVEMENT_MAX               (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
-
-#define HEALTH_MAX                 (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
-
-#define SHOOTING_MAX               PLAYER_MAX
-
-#define COLLISION_MAX              (PLAYER_MAX + BULLET_MAX + ENEMY_MAX)
-
-#define RENDER_SDL_RECT_PER_PLAYER   1
-#define RENDER_SDL_RECT_PER_BULLET   1
-#define RENDER_SDL_RECT_PER_ENEMY    1
-#define RENDER_SDL_RECT_PER_PARTICLE 1
-#define RENDER_MAX                   (PLAYER_MAX + BULLET_MAX + ENEMY_MAX + PARTICLE_MAX)
-#define RENDER_SDL_RECT_MAX          ((PLAYER_MAX * RENDER_SDL_RECT_PER_PLAYER) + (BULLET_MAX * RENDER_SDL_RECT_PER_BULLET) + (ENEMY_MAX * RENDER_SDL_RECT_PER_ENEMY) + (PARTICLE_MAX * RENDER_SDL_RECT_PER_PARTICLE))
-
-
-#define ENTITY_TYPE_PLAYER   0
-#define ENTITY_TYPE_ENEMY    0
-#define ENTITY_TYPE_BULLET   0
-#define ENTITY_TYPE_PARTICLE 0
 
 
 struct Entity {
-    int type;
-};
+    /* Position */
+    struct Vec2f pos_pos;
+    int          pos_w;
+    int          pos_h;
 
-struct PositionComponent {
-    struct Vec2f pos;
-    int          w;
-    int          h;
-};
+    /* Movement */
+    struct Vec2f mov_dir;
+    int          mov_vel;
 
-struct MovementComponent {
-    struct Vec2f dir;
-    int          vel;
-};
+    /* Health */
+    int hea_alive;
 
-struct RenderComponent {
-    float x;
-    float y;
-    int   w;
-    int   h;
-};
+    /* Shooting */
+    int   sho_bullets_n;
+    int   sho_firing;
+    int   sho_fire_spacing;
+    float sho_fire_time;
 
-struct ShootingComponent {
-    int   bullets_n;
-    int   firing;
-    int   fire_spacing;
-    float fire_time; 
-};
+    /* Collision */
+    SDL_Rect col_sdl_rect;
 
-struct HealthComponent {
-    int alive;
+    /* Render */
+    SDL_Rect ren_sdl_rect;
 };
-/* wat_dod.h end */
+/* entity.h end */
 
 
 /* util.h start */
@@ -211,11 +179,11 @@ extern float EXPLOSION_PARTICLES_VY[4];
 
 
 /* player.h start */
-void player_on_button_a_keydown(int index);
-void player_on_button_a_keyup(int index);
-void player_fire(int index);
+void player_on_button_a_keydown(struct Entity *entity);
+void player_on_button_a_keyup(struct Entity *entity);
+void player_fire(struct Entity *player);
 
-void player_fire_update(int index);
+void player_fire_update(struct Entity *entity);
 void player_fire_update_all();
 /* player.h end */
 
@@ -297,20 +265,20 @@ void input_update();
 /* input.h end */
 
 
-void movement_init(int eid, float x, float y, int w, int h, int v);
-void movement_fclamp_player(int eid);
-void movement_update(int idx);
-void movement_update_range(int start, int end);
+void movement_init(struct Entity *entity, float x, float y, int w, int h, int v);
+void movement_fclamp_player(struct Entity *entity);
+void movement_update(struct Entity *entity);
+void movement_update_range(struct Entity *entities, int n);
 
-void collision_sync_range(int start, int end);
+void collision_sync_range(struct Entity *entities, int n);
 
-void health_init(int eid, int alive);
-void health_kill_if_out_of_range(int eid, float xmin, float xmax, float ymin, float ymax);
-void health_kill_if_out_of_map_range(int start, int end);
-int health_get_dead_range(int start, int end);
+void health_init(struct Entity *entity, int alive);
+void health_kill_if_out_of_range(struct Entity *entity, float xmin, float xmax, float ymin, float ymax);
+void health_kill_if_out_of_map_range(struct Entity *entities, int n);
+struct Entity *health_get_dead_range(struct Entity *entities, int n);
 
-void render_sync_range(int start, int end);
+void render_sync_range(struct Entity *entities, int n);
 
-void render_update_range(int start, int end, SDL_Renderer *renderer);
+void render_update_range(struct Entity *entities, int n, SDL_Renderer *renderer);
 
 #endif

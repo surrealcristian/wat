@@ -1,5 +1,36 @@
 #include "wat.h"
 
+/*
+Palette from https://github.com/leofeyer/darcula-ftw
+
+Base colors
+Palette	Hex	RGB
+Background	#2b2b2b	43 43 43
+Current line	#323232	50 50 50
+Selection	#214283	33 66 131
+Foreground	#a9b7c6	169 183 198
+Comment	#808080	128 128 128
+
+ANSI colors
+Palette	Hex	RGB
+Black	#000000	0 0 0
+Blue	#5394ec	83 148 236
+Cyan	#299999	41 153 153
+Gray	#555555	85 85 85
+Green	#379c1a	55 156 26
+Magenta	#ae8abe	174 138 190
+Red	#e74644	231 70 68
+White	#eeeeee	238 238 238
+Yellow	#dcc457	220 196 87
+
+*/
+SDL_Color COLOR_BLUE    = { .r = 83 , .g = 148, .b = 236, .a = 255 };
+SDL_Color COLOR_ORANGE  = { .r = 255, .g = 165, .b = 0  , .a = 255 };
+SDL_Color COLOR_MAGENTA = { .r = 174, .g = 138, .b = 190, .a = 255 };
+SDL_Color COLOR_RED     = { .r = 231, .g = 70 , .b = 68 , .a = 255 };
+SDL_Color COLOR_WHITE   = { .r = 238, .g = 238, .b = 238, .a = 255 };
+SDL_Color COLOR_YELLOW  = { .r = 220, .g = 196, .b = 87 , .a = 255 };
+
 struct Entity PLAYERS[PLAYER_MAX];
 struct Entity ENEMIES[ENEMY_MAX];
 struct Entity BULLETS[BULLET_MAX];
@@ -173,7 +204,7 @@ void text_render_rune(
         self->rect.x = x + RUNE_X_POSITIONS[i] * self->size_px;
         self->rect.y = y + RUNE_Y_POSITIONS[i] * self->size_px;
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(renderer, COLOR_WHITE.r, COLOR_WHITE.g, COLOR_WHITE.b, SDL_ALPHA_OPAQUE);
         SDL_RenderFillRect(renderer, &self->rect);
     }
 }
@@ -365,7 +396,7 @@ void collision_enemies_vs_player_bullets() {
                 enemy->hea_alive = 0;
                 bullet->hea_alive = 0;
 
-                collision_make_explosion(enemy->pos_pos.x, enemy->pos_pos.y);
+                collision_make_explosion(enemy);
 
                 SCORE.value += ENEMY_SCORE;
 
@@ -380,7 +411,7 @@ void collision_update() {
     collision_enemies_vs_player_bullets();
 }
 
-void collision_make_explosion(float x, float y) {
+void collision_make_explosion(struct Entity *entity) {
     for (int i = 0; i < EXPLOSION_PARTICLES_N; i++) {
         struct Entity *particle = health_get_dead_range(PARTICLES, PARTICLE_MAX);
 
@@ -388,12 +419,18 @@ void collision_make_explosion(float x, float y) {
             return;
         }
 
-        particle->pos_pos.x = x;
-        particle->pos_pos.y = y;
+        particle->pos_pos.x = entity->pos_pos.x;
+        particle->pos_pos.y = entity->pos_pos.y;
+        particle->pos_w     = entity->pos_w * 1.5;
+        particle->pos_h     = entity->pos_h * 1.5;
 
-        particle->mov_dir = EXPLOSION_PARTICLES_DIR[i];
+        particle->mov_dir.x = entity->mov_dir.x;
+        particle->mov_dir.y = entity->mov_dir.y;
+        particle->mov_vel   = entity->mov_vel;
 
-        particle->hea_alive = 1;
+        particle->hea_time_enabled = 1;
+        particle->hea_time         = 250;
+        particle->hea_alive        = 1;
     }
 }
 /* collision.c end */
@@ -465,6 +502,8 @@ void in_game_state_update() {
     health_kill_if_out_of_map_range(ENEMIES, ENEMY_MAX);
     health_kill_if_out_of_map_range(PARTICLES, PARTICLE_MAX);
 
+    health_kill_time_range(PARTICLES, PARTICLE_MAX);
+
     collision_sync_range(PLAYERS, PLAYER_MAX);
     collision_sync_range(ENEMIES, ENEMY_MAX);
     collision_sync_range(BULLETS, BULLET_MAX);
@@ -482,10 +521,10 @@ void in_game_state_render(SDL_Renderer *renderer) {
     render_sync_range(ENEMIES, ENEMY_MAX);
     render_sync_range(BULLETS, BULLET_MAX);
 
-    render_update_range(PLAYERS, PLAYER_MAX, renderer);
-    render_update_range(ENEMIES, ENEMY_MAX, renderer);
-    render_update_range(BULLETS, BULLET_MAX, renderer);
-    render_update_range(PARTICLES, PARTICLE_MAX, renderer);
+    render_update_range(PARTICLES, PARTICLE_MAX, &COLOR_ORANGE, renderer);
+    render_update_range(BULLETS  , BULLET_MAX  , &COLOR_YELLOW, renderer);
+    render_update_range(ENEMIES  , ENEMY_MAX   , &COLOR_BLUE   , renderer);
+    render_update_range(PLAYERS  , PLAYER_MAX  , &COLOR_RED   , renderer);
 
     hud_render(renderer);
 }
@@ -503,10 +542,10 @@ void pause_state_render(SDL_Renderer *renderer) {
     render_sync_range(ENEMIES, ENEMY_MAX);
     render_sync_range(BULLETS, BULLET_MAX);
 
-    render_update_range(PLAYERS, PLAYER_MAX, renderer);
-    render_update_range(ENEMIES, ENEMY_MAX, renderer);
-    render_update_range(BULLETS, BULLET_MAX, renderer);
-    render_update_range(PARTICLES, PARTICLE_MAX, renderer);
+    render_update_range(PARTICLES, PARTICLE_MAX, &COLOR_ORANGE, renderer);
+    render_update_range(BULLETS  , BULLET_MAX  , &COLOR_ORANGE, renderer);
+    render_update_range(ENEMIES  , ENEMY_MAX   , &COLOR_BLUE   , renderer);
+    render_update_range(PLAYERS  , PLAYER_MAX  , &COLOR_RED   , renderer);
 
     hud_render(renderer);
 
@@ -566,7 +605,7 @@ void game_run(SDL_Renderer *renderer) {
 
         /* RENDER */
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(renderer, 43, 43, 43, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
         if (GAME.state == STATE_WELCOME) {
@@ -580,9 +619,12 @@ void game_run(SDL_Renderer *renderer) {
         /* ----- */
         debug_end = SDL_GetPerformanceCounter();
         debug_elapsed = performance_counters_to_ms(debug_start, debug_end);
+
+        /*
         if (GAME.state == STATE_IN_GAME) {
             SDL_Log("%f", debug_elapsed);
         }
+        */
         /* ----- */
 
         SDL_RenderPresent(renderer);
@@ -714,8 +756,10 @@ void collision_sync_range(struct Entity *entities, int n) {
     }
 }
 
-void health_init(struct Entity *entity, int alive) {
-    entity->hea_alive = alive;
+void health_init(struct Entity *entity, int alive, int time_enabled, float time) {
+    entity->hea_time_enabled = time_enabled;
+    entity->hea_time         = time;
+    entity->hea_alive        = alive;
 }
 
 void health_kill_if_out_of_range(struct Entity *entity, float xmin, float xmax, float ymin, float ymax) {
@@ -751,6 +795,24 @@ void health_kill_if_out_of_map_range(struct Entity *entities, int n) {
     }
 }
 
+void health_kill_time_range(struct Entity *entities, int n) {
+    for (int i = 0; i < n; i++) {
+        struct Entity *entity = &entities[i];
+    
+        if (entity->hea_alive == 0 || entity->hea_time_enabled == 0) {
+            continue;
+        }
+
+        entity->hea_time -= MS_PER_UPDATE;
+
+        if (entity->hea_time <= 0.0) {
+            entity->hea_time_enabled = 0;
+            entity->hea_time         = 0.0;
+            entity->hea_alive        = 0;
+        }
+    }
+}
+
 struct Entity *health_get_dead_range(struct Entity *entities, int n) {
     for (int i = 0; i < n; i++) {
         struct Entity *entity = &entities[i];
@@ -781,15 +843,15 @@ void render_sync_range(struct Entity *entities, int n) {
     }
 }
 
-void render_update_range(struct Entity *entities, int n, SDL_Renderer *renderer) {
+void render_update_range(struct Entity *entities, int n, SDL_Color *color, SDL_Renderer *renderer) {
+    SDL_SetRenderDrawColor(renderer, color->r, color->g, color->b, color->a);
+
     for (int i = 0; i < n; i++) {
         struct Entity *entity = &entities[i];
 
         if (entity->hea_alive == 0) {
             continue;
         }
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 
         int ret = SDL_RenderFillRect(renderer, &entity->ren_sdl_rect);
 
@@ -838,13 +900,13 @@ int main(void) {
 
     for (int i = 0; i < BULLET_MAX; i++) {
         movement_init(&BULLETS[i], 0, 0, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
-        health_init(&BULLETS[i], 0);
+        health_init(&BULLETS[i], 0, 0, 0.0);
     }
 
     /* init players */
     for (int i = 0; i < PLAYER_MAX; i++) {
         movement_init(&PLAYERS[i], WINDOW_W / 2, WINDOW_H / 2, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_V);
-        health_init(&PLAYERS[i], 1);
+        health_init(&PLAYERS[i], 1, 0, 0.0);
 
         PLAYERS[i].sho_bullets_n = PLAYER_BULLETS_INIT_N;
         PLAYERS[i].sho_fire_spacing = 128;
@@ -852,17 +914,17 @@ int main(void) {
 
     /* init enemies */
     ENEMY_MANAGER.time    = 0.0;
-    ENEMY_MANAGER.spacing = 1.0; /* TODO: 100.0 */
+    ENEMY_MANAGER.spacing = 24.0; /* TODO: 100.0 */
 
     for (int i = 0; i < ENEMY_MAX; i++) {
         movement_init(&ENEMIES[i], 0, 0, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_V);
-        health_init(&ENEMIES[i], 0);
+        health_init(&ENEMIES[i], 0, 0, 0.0);
     }
 
     /* init particles */
     for (int i = 0; i < PARTICLE_MAX; i++) {
         movement_init(&PARTICLES[i], 0, 0, PARTICLE_WIDTH, PARTICLE_HEIGHT, PARTICLE_V);
-        health_init(&PARTICLES[i], 0);
+        health_init(&PARTICLES[i], 0, 0, 0.0);
     }
 
     score_init();

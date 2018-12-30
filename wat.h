@@ -7,6 +7,60 @@
 #include "SDL.h"
 #include "tinymt32.h"
 
+
+/* config.h */
+#define PLAYER_MAX                 1
+#define BULLET_PER_PLAYER          128
+#define BULLET_MAX                 (PLAYER_MAX * BULLET_PER_PLAYER)
+/* TODO: 16 */
+#define ENEMY_MAX                  64
+#define PARTICLE_MAX               128
+
+#define WINDOW_W 480
+#define WINDOW_H 640
+
+#define UPDATES_PER_SECOND 120.0
+#define MS_PER_UPDATE 8.33 /* 1000 / 120.0 */
+#define SLEEP_MS 2.08 /* 1000 / 480.0 */
+
+#define STATE_WELCOME 0
+#define STATE_IN_GAME 1
+#define STATE_PAUSE   2
+
+#define PLAYER_WIDTH 16
+#define PLAYER_HEIGHT 32
+#define PLAYER_V 512
+
+#define PLAYER_BULLETS_MAX 128
+#define PLAYER_BULLETS_INIT_N 5
+#define PLAYER_BULLETS_W 8
+#define PLAYER_BULLETS_H 128
+#define PLAYER_BULLETS_V 2048
+#define PLAYER_BULLETS_VX +0
+#define PLAYER_BULLETS_VY -1
+
+#define ENEMY_WIDTH 32
+#define ENEMY_HEIGHT 32
+#define ENEMY_V 128
+#define ENEMY_VX +0
+#define ENEMY_VY +1
+
+#define PARTICLE_WIDTH 8
+#define PARTICLE_HEIGHT 8
+#define PARTICLE_V 1024
+
+#define EXPLOSION_PARTICLES_N 1
+
+#define ENEMY_SCORE 10
+
+extern float PLAYER_BULLETS_OFFSET_X[5];
+extern float PLAYER_BULLETS_OFFSET_Y[5];
+
+extern float EXPLOSION_PARTICLES_VX[4];
+extern float EXPLOSION_PARTICLES_VY[4];
+/* config.h */
+
+
 /* vec2f.h start */
 struct Vec2f {
     float x;
@@ -18,15 +72,7 @@ float vec2f_length(struct Vec2f *v);
 void vec2f_normalize(struct Vec2f *self);
 /* vec2f.h end */
 
-/* entity start */
-#define PLAYER_MAX                 1
-#define BULLET_PER_PLAYER          128
-#define BULLET_MAX                 (PLAYER_MAX * BULLET_PER_PLAYER)
-/* TODO: 16 */
-#define ENEMY_MAX                  8192
-#define PARTICLE_MAX               128
-
-
+/* ecs start */
 struct Entity {
     /* Position */
     struct Vec2f pos_pos;
@@ -38,7 +84,9 @@ struct Entity {
     int          mov_vel;
 
     /* Health */
-    int hea_alive;
+    int   hea_time_enabled;
+    float hea_time;
+    int   hea_alive;
 
     /* Shooting */
     int   sho_bullets_n;
@@ -52,7 +100,20 @@ struct Entity {
     /* Render */
     SDL_Rect ren_sdl_rect;
 };
-/* entity.h end */
+
+void movement_init(struct Entity *entity, float x, float y, int w, int h, int v);
+void movement_update(struct Entity *entity);
+void movement_update_range(struct Entity *entities, int n);
+
+void health_init(struct Entity *entity, int alive, int time_enabled, float time);
+void health_kill_if_out_of_range(struct Entity *entity, float xmin, float xmax, float ymin, float ymax);
+struct Entity *health_get_dead_range(struct Entity *entities, int n);
+
+void collision_sync_range(struct Entity *entities, int n);
+
+void render_sync_range(struct Entity *entities, int n);
+void render_update_range(struct Entity *entities, int n, SDL_Color *color, SDL_Renderer *renderer);
+/* ecs.h end */
 
 
 /* util.h start */
@@ -132,52 +193,6 @@ struct Keyboard {
 /* keys.h end */
 
 
-/* config.h start */
-#define WINDOW_W 480
-#define WINDOW_H 640
-
-#define UPDATES_PER_SECOND 120.0
-#define MS_PER_UPDATE 8.33 /* 1000 / 120.0 */
-#define SLEEP_MS 2.08 /* 1000 / 480.0 */
-
-#define STATE_WELCOME 0
-#define STATE_IN_GAME 1
-#define STATE_PAUSE   2
-
-#define PLAYER_WIDTH 16
-#define PLAYER_HEIGHT 16
-#define PLAYER_V 512
-
-#define PLAYER_BULLETS_MAX 128
-#define PLAYER_BULLETS_INIT_N 5
-#define PLAYER_BULLETS_W 4
-#define PLAYER_BULLETS_H 4
-#define PLAYER_BULLETS_V 2048
-#define PLAYER_BULLETS_VX +0
-#define PLAYER_BULLETS_VY -1
-
-#define ENEMY_WIDTH 32
-#define ENEMY_HEIGHT 32
-#define ENEMY_V 128
-#define ENEMY_VX +0
-#define ENEMY_VY +1
-
-#define PARTICLE_WIDTH 8
-#define PARTICLE_HEIGHT 8
-#define PARTICLE_V 1024
-
-#define EXPLOSION_PARTICLES_N 4
-
-#define ENEMY_SCORE 10
-
-extern float PLAYER_BULLETS_OFFSET_X[5];
-extern float PLAYER_BULLETS_OFFSET_Y[5];
-
-extern float EXPLOSION_PARTICLES_VX[4];
-extern float EXPLOSION_PARTICLES_VY[4];
-/* config.h end */
-
-
 /* player.h start */
 void player_on_button_a_keydown(struct Entity *entity);
 void player_on_button_a_keyup(struct Entity *entity);
@@ -212,7 +227,7 @@ void score_init();
 void collision_player_vs_enemies();
 void collision_enemies_vs_player_bullets();
 
-void collision_make_explosion(float x, float y);
+void collision_make_explosion(struct Entity *entity);
 
 void collision_update();
 /* collision.h end */
@@ -265,20 +280,8 @@ void input_update();
 /* input.h end */
 
 
-void movement_init(struct Entity *entity, float x, float y, int w, int h, int v);
 void movement_fclamp_player(struct Entity *entity);
-void movement_update(struct Entity *entity);
-void movement_update_range(struct Entity *entities, int n);
-
-void collision_sync_range(struct Entity *entities, int n);
-
-void health_init(struct Entity *entity, int alive);
-void health_kill_if_out_of_range(struct Entity *entity, float xmin, float xmax, float ymin, float ymax);
 void health_kill_if_out_of_map_range(struct Entity *entities, int n);
-struct Entity *health_get_dead_range(struct Entity *entities, int n);
-
-void render_sync_range(struct Entity *entities, int n);
-
-void render_update_range(struct Entity *entities, int n, SDL_Renderer *renderer);
+void health_kill_time_range(struct Entity *entities, int n);
 
 #endif

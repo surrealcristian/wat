@@ -12,7 +12,6 @@
 #define PLAYER_MAX                 1
 #define BULLET_PER_PLAYER          128
 #define BULLET_MAX                 (PLAYER_MAX * BULLET_PER_PLAYER)
-/* TODO: 16 */
 #define ENEMY_MAX                  64
 #define PARTICLE_MAX               128
 
@@ -36,14 +35,10 @@
 #define PLAYER_BULLETS_W 8
 #define PLAYER_BULLETS_H 128
 #define PLAYER_BULLETS_V 2048
-#define PLAYER_BULLETS_VX +0
-#define PLAYER_BULLETS_VY -1
 
 #define ENEMY_WIDTH 32
 #define ENEMY_HEIGHT 32
 #define ENEMY_V 128
-#define ENEMY_VX +0
-#define ENEMY_VY +1
 
 #define PARTICLE_WIDTH 8
 #define PARTICLE_HEIGHT 8
@@ -101,18 +96,17 @@ struct Entity {
     SDL_Rect ren_sdl_rect;
 };
 
-void movement_init(struct Entity *entity, float x, float y, int w, int h, int v);
-void movement_update(struct Entity *entity);
-void movement_update_range(struct Entity *entities, int n);
+void mov_init(struct Entity *e, float x, float y, int w, int h, int v);
+void mov_update(struct Entity *es, int n);
 
-void health_init(struct Entity *entity, int alive, int time_enabled, float time);
-void health_kill_if_out_of_range(struct Entity *entity, float xmin, float xmax, float ymin, float ymax);
-struct Entity *health_get_dead_range(struct Entity *entities, int n);
+void hea_init(struct Entity *e, int alive, int time_enabled, float time);
+void hea_kill_out_of_range(struct Entity *e, float xmin, float xmax, float ymin, float ymax);
+struct Entity *hea_get_dead(struct Entity *es, int n);
 
-void collision_sync_range(struct Entity *entities, int n);
+void col_sync(struct Entity *es, int n);
 
-void render_sync_range(struct Entity *entities, int n);
-void render_update_range(struct Entity *entities, int n, SDL_Color *color, SDL_Renderer *renderer);
+void ren_sync(struct Entity *es, int n);
+void ren_update(struct Entity *es, int n, SDL_Color *color, SDL_Renderer *renderer);
 /* ecs.h end */
 
 
@@ -194,12 +188,11 @@ struct Keyboard {
 
 
 /* player.h start */
-void player_on_button_a_keydown(struct Entity *entity);
-void player_on_button_a_keyup(struct Entity *entity);
+void player_on_button_a_keydown(struct Entity *e);
+void player_on_button_a_keyup(struct Entity *e);
 void player_fire(struct Entity *player);
 
-void player_fire_update(struct Entity *entity);
-void player_fire_update_all();
+void player_fire_update();
 /* player.h end */
 
 
@@ -209,7 +202,6 @@ struct EnemyManager {
     float        spacing;
 };
 
-void enemy_try_spawn();
 void enemy_spawn();
 /* enemy.h end */
 
@@ -224,12 +216,9 @@ void score_init();
 
 
 /* collision.h start */
-void collision_player_vs_enemies();
-void collision_enemies_vs_player_bullets();
-
-void collision_make_explosion(struct Entity *entity);
-
-void collision_update();
+void col_player_vs_enemies();
+void col_enemies_vs_player_bullets();
+void col_explode(struct Entity *e);
 /* collision.h end */
 
 
@@ -270,7 +259,6 @@ struct Game {
 };
 
 void game_init();
-
 void game_run(SDL_Renderer *renderer);
 /* game.h end */
 
@@ -280,8 +268,8 @@ void input_update();
 /* input.h end */
 
 
-void movement_fclamp_player(struct Entity *entity);
-void health_kill_if_out_of_map_range(struct Entity *entities, int n);
-void health_kill_time_range(struct Entity *entities, int n);
+void mov_fclamp_map(struct Entity *e);
+void hea_kill_out_of_map(struct Entity *es, int n);
+void hea_kill_time(struct Entity *es, int n);
 
 #endif

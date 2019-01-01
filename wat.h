@@ -75,8 +75,8 @@ struct Entity {
     int          pos_h;
 
     /* Movement */
-    struct Vec2f mov_dir;
-    int          mov_vel;
+    float mov_dir;
+    int   mov_vel;
 
     /* Health */
     int   hea_time_enabled;
@@ -98,6 +98,7 @@ struct Entity {
 
 void mov_init(struct Entity *e, float x, float y, int w, int h, int v);
 void mov_update(struct Entity *es, int n);
+void mov_player_input(struct Entity *e);
 
 void hea_init(struct Entity *e, int alive, int time_enabled, float time);
 void hea_kill_out_of_range(struct Entity *e, float xmin, float xmax, float ymin, float ymax);

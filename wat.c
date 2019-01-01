@@ -70,6 +70,16 @@ int rand_n( tinymt32_t *state, int n) {
 float fclamp(float f, float min, float max) {
     return fmin(fmax(f, min), max);
 }
+
+/* TODO: move to macro */
+float rad2deg(float rad) {
+    return rad * (180 / PI);
+}
+
+/* TODO: move to macro */
+float deg2rad(float deg) {
+    return deg * (PI / 180);
+}
 /* util.c end */
 
 
@@ -154,13 +164,9 @@ void text_init(
     self->x     = x;
     self->y     = y;
 
-    if (self->size == TEXT_SIZE_SMALL) {
-        self->size_px = RUNE_SMALL_PX;
-    } else if (self->size == TEXT_SIZE_MEDIUM) {
-        self->size_px = RUNE_MEDIUM_PX;
-    } else if (self->size == TEXT_SIZE_LARGE) {
-        self->size_px = RUNE_LARGE_PX;
-    }
+    if      (self->size == TEXT_SIZE_SMALL ) { self->size_px = RUNE_SMALL_PX;  }
+    else if (self->size == TEXT_SIZE_MEDIUM) { self->size_px = RUNE_MEDIUM_PX; }
+    else if (self->size == TEXT_SIZE_LARGE ) { self->size_px = RUNE_LARGE_PX;  }
 
     self->rect.w = self->size_px;
     self->rect.h = self->size_px;
@@ -219,13 +225,9 @@ void text_render(struct Text  *self, SDL_Renderer *renderer) {
     int   c;
     int   idx;
 
-    if (self->align == TEXT_ALIGN_LEFT) {
-        rune_x = self->x;
-    } else if (self->align == TEXT_ALIGN_CENTER) {
-        rune_x = self->x - (text_w_px / 2);
-    } else if (self->align == TEXT_ALIGN_RIGHT) {
-        rune_x = self->x - text_w_px;
-    }
+    if      (self->align == TEXT_ALIGN_LEFT  ) { rune_x = self->x;                   }
+    else if (self->align == TEXT_ALIGN_CENTER) { rune_x = self->x - (text_w_px / 2); }
+    else if (self->align == TEXT_ALIGN_RIGHT ) { rune_x = self->x - text_w_px;       }
 
     rune_y = self->y - (rune_h_px / 2);
 
@@ -233,13 +235,9 @@ void text_render(struct Text  *self, SDL_Renderer *renderer) {
     for (int i = 0; self->value[i] != '\0'; i++) {
         c = self->value[i];
 
-        if (c >= '0' && c <= '9') {
-            idx = c - '0';
-        } else if (c >= 'A' && c <= 'Z') {
-            idx = c - 'A' + 10;
-        } else {
-            return;
-        }
+        if      (c >= '0' && c <= '9') { idx = c - '0';      }
+        else if (c >= 'A' && c <= 'Z') { idx = c - 'A' + 10; }
+        else                           { return;             }
 
         text_render_rune(self, renderer, idx, rune_x, rune_y);
 
@@ -300,7 +298,7 @@ void player_fire(struct Entity *player) {
         bullet->pos_pos.x = x;
         bullet->pos_pos.y = y;
 
-        vec2f_set_xy(&bullet->mov_dir, +0.0, -1.0);
+        bullet->mov_dir = 0.0;
     }
 }
 
@@ -308,9 +306,7 @@ void player_fire_update() {
     for (int i = 0; i < PLAYER_MAX; i++) {
         struct Entity *e = &PLAYERS[i];
 
-        if (e->hea_alive == 0) {
-            continue;
-        }
+        if (e->hea_alive == 0) { continue; }
 
         if (KEYBOARD.z) {
             e->sho_fire_time += MS_PER_UPDATE;
@@ -341,7 +337,7 @@ void enemy_spawn() {
         enemy->pos_pos.x = rand_n(&TINYMT_STATE, WINDOW_W + 1);
         enemy->pos_pos.y = 0 - enemy->pos_h;
 
-        vec2f_set_xy(&enemy->mov_dir, +0.0, +1.0);
+        enemy->mov_dir = 180;
 
         ENEMY_MANAGER.time = 0.0;
     }
@@ -360,16 +356,12 @@ void score_init() {
 void col_player_vs_enemies() {
     struct Entity *player = &PLAYERS[0];
 
-    if (player->hea_alive == 0) {
-        return;
-    }
+    if (player->hea_alive == 0) { return; }
 
     for (int i = 0; i < ENEMY_MAX; i++) {
         struct Entity *enemy = &ENEMIES[i];
 
-        if (enemy->hea_alive == 0) {
-            continue;
-        }
+        if (enemy->hea_alive == 0) { continue; }
 
         if (SDL_HasIntersection(&player->col_sdl_rect, &enemy->col_sdl_rect) == SDL_TRUE) {
             enemy->hea_alive = 0;
@@ -382,16 +374,12 @@ void col_enemies_vs_player_bullets() {
     for (int i = 0; i < ENEMY_MAX; i++) {
         struct Entity *enemy = &ENEMIES[i];
 
-        if (enemy->hea_alive == 0) {
-            continue;
-        }
+        if (enemy->hea_alive == 0) { continue; }
 
         for (int j = 0; j < BULLET_MAX; j++) {
             struct Entity *bullet = &BULLETS[j];
 
-            if (bullet->hea_alive == 0) {
-                continue;
-            }
+            if (bullet->hea_alive == 0) { continue; }
 
             if (SDL_HasIntersection(&enemy->col_sdl_rect, &bullet->col_sdl_rect) == SDL_TRUE) {
                 enemy->hea_alive = 0;
@@ -420,8 +408,7 @@ void col_explode(struct Entity *e) {
         particle->pos_w     = e->pos_w * 1.5;
         particle->pos_h     = e->pos_h * 1.5;
 
-        particle->mov_dir.x = e->mov_dir.x;
-        particle->mov_dir.y = e->mov_dir.y;
+        particle->mov_dir = e->mov_dir;
         particle->mov_vel   = e->mov_vel;
 
         particle->hea_time_enabled = 1;
@@ -462,26 +449,7 @@ void hud_render(SDL_Renderer *renderer) {
 void in_game_state_update() {
     struct Entity *player = &PLAYERS[0];
 
-    float tmp_x = +0.0;
-    float tmp_y = +0.0;
-
-    if (KEYBOARD.right) {
-        tmp_x += +1.0;
-    }
-
-    if (KEYBOARD.left) {
-        tmp_x += -1.0;
-    }
-
-    if (KEYBOARD.up) {
-        tmp_y += -1.0;
-    }
-
-    if (KEYBOARD.down) {
-        tmp_y += +1.0;
-    }
-
-    vec2f_set_xy(&player->mov_dir, tmp_x, tmp_y);
+    mov_player_input(player);
 
     mov_update(PLAYERS, PLAYER_MAX);
     mov_update(ENEMIES, ENEMY_MAX);
@@ -587,13 +555,9 @@ void game_run(SDL_Renderer *renderer) {
         }
 
         while (lag >= MS_PER_UPDATE) {
-            if (GAME.state == STATE_WELCOME) {
-                welcome_state_update();
-            } else if (GAME.state == STATE_IN_GAME) {
-                in_game_state_update();
-            } else if (GAME.state == STATE_PAUSE) {
-                pause_state_update();
-            }
+            if      (GAME.state == STATE_WELCOME) { welcome_state_update(); }
+            else if (GAME.state == STATE_IN_GAME) { in_game_state_update(); }
+            else if (GAME.state == STATE_PAUSE  ) { pause_state_update();   }
 
             lag -= MS_PER_UPDATE;
         }
@@ -603,13 +567,9 @@ void game_run(SDL_Renderer *renderer) {
         SDL_SetRenderDrawColor(renderer, 43, 43, 43, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
-        if (GAME.state == STATE_WELCOME) {
-            welcome_state_render(renderer);
-        } else if (GAME.state == STATE_IN_GAME) {
-            in_game_state_render(renderer);
-        } else if (GAME.state == STATE_PAUSE) {
-            pause_state_render(renderer);
-        }
+        if      (GAME.state == STATE_WELCOME) { welcome_state_render(renderer); }
+        else if (GAME.state == STATE_IN_GAME) { in_game_state_render(renderer); }
+        else if (GAME.state == STATE_PAUSE  ) { pause_state_render(renderer);   }
 
         /* ----- */
         debug_end = SDL_GetPerformanceCounter();
@@ -718,26 +678,41 @@ void mov_update(struct Entity *es, int n) {
     for (int i = 0; i < n; i++) {
         struct Entity *e = &es[i];
 
-        if (e->hea_alive == 0) {
-            continue;
-        }
+        if (e->hea_alive == 0) { continue; }
 
-        if (e->mov_dir.x != 0.0 || e->mov_dir.y != 0.0) {
-            vec2f_normalize(&e->mov_dir);
+        if (e->mov_vel != 0.0) {
+            //TODO: implement
+            float radians = deg2rad(e->mov_dir);
             
-            e->pos_pos.x += (e->mov_vel * e->mov_dir.x) / UPDATES_PER_SECOND;
-            e->pos_pos.y += (e->mov_vel * e->mov_dir.y) / UPDATES_PER_SECOND;
+            e->pos_pos.x += (sin(radians) * e->mov_vel) / UPDATES_PER_SECOND;
+            e->pos_pos.y -= (cos(radians) * e->mov_vel) / UPDATES_PER_SECOND;
         }
     }
+}
+
+void mov_player_input(struct Entity *e) {
+    /* TODO: improve implementation */
+    float dir = 0.0;
+    float vel = 0;
+
+    if      (KEYBOARD.up   && KEYBOARD.left ) { dir = 315.0; vel = PLAYER_V; }
+    else if (KEYBOARD.up   && KEYBOARD.right) { dir = 045.0; vel = PLAYER_V; }
+    else if (KEYBOARD.down && KEYBOARD.left ) { dir = 225.0; vel = PLAYER_V; }
+    else if (KEYBOARD.down && KEYBOARD.right) { dir = 135.0; vel = PLAYER_V; }
+    else if (KEYBOARD.up                    ) { dir = 000.0; vel = PLAYER_V; }
+    else if (KEYBOARD.down                  ) { dir = 180.0; vel = PLAYER_V; }
+    else if (KEYBOARD.left                  ) { dir = 270.0; vel = PLAYER_V; }
+    else if (KEYBOARD.right                 ) { dir = 090.0; vel = PLAYER_V; }
+
+    e->mov_dir = dir;
+    e->mov_vel = vel;
 }
 
 void col_sync(struct Entity *es, int n) {
     for (int i = 0; i < n; i++) {
         struct Entity *e = &es[i];
 
-        if (e->hea_alive == 0) {
-            continue;
-        }
+        if (e->hea_alive == 0) { continue; }
 
         e->col_sdl_rect.w = e->pos_w;
         e->col_sdl_rect.h = e->pos_h;
@@ -790,9 +765,7 @@ void hea_kill_time(struct Entity *es, int n) {
     for (int i = 0; i < n; i++) {
         struct Entity *e = &es[i];
     
-        if (e->hea_alive == 0 || e->hea_time_enabled == 0) {
-            continue;
-        }
+        if (e->hea_alive == 0 || e->hea_time_enabled == 0) { continue; }
 
         e->hea_time -= MS_PER_UPDATE;
 
@@ -808,9 +781,7 @@ struct Entity *hea_get_dead(struct Entity *es, int n) {
     for (int i = 0; i < n; i++) {
         struct Entity *e = &es[i];
 
-        if (e->hea_alive == 1) {
-            continue;
-        }
+        if (e->hea_alive == 1) { continue; }
 
         return e;
     }
@@ -822,9 +793,7 @@ void ren_sync(struct Entity *es, int n) {
     for (int i = 0; i < n; i++) {
         struct Entity *e = &es[i];
 
-        if (e->hea_alive == 0) {
-            continue;
-        }
+        if (e->hea_alive == 0) { continue; }
 
         e->ren_sdl_rect.w = e->pos_w;
         e->ren_sdl_rect.h = e->pos_h;
@@ -840,9 +809,7 @@ void ren_update(struct Entity *es, int n, SDL_Color *color, SDL_Renderer *render
     for (int i = 0; i < n; i++) {
         struct Entity *e = &es[i];
 
-        if (e->hea_alive == 0) {
-            continue;
-        }
+        if (e->hea_alive == 0) { continue; }
 
         int ret = SDL_RenderFillRect(renderer, &e->ren_sdl_rect);
 

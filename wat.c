@@ -592,50 +592,35 @@ void game_run(SDL_Renderer *renderer) {
 
 /* input.c start */
 void input_update() {
-    int sym;
+    if (EVENT.type != SDL_KEYDOWN && EVENT.type != SDL_KEYUP) { return; }
+    if (EVENT.key.repeat                                    ) { return; }
 
     struct Entity *player = &PLAYERS[0];
 
+    int sym = EVENT.key.keysym.sym;
+
     if (EVENT.type == SDL_KEYDOWN) {
-        if (EVENT.key.repeat) {
-            return;
-        }
+        if      (sym == SDLK_RIGHT) { KEYBOARD.right = 1; }
+        else if (sym == SDLK_LEFT ) { KEYBOARD.left  = 1; }
+        else if (sym == SDLK_UP   ) { KEYBOARD.up    = 1; }
+        else if (sym == SDLK_DOWN ) { KEYBOARD.down  = 1; }
+        else if (sym == SDLK_z    ) { KEYBOARD.z     = 1; }
+    } else if (EVENT.type == SDL_KEYUP) {
+        if      (sym == SDLK_RIGHT) { KEYBOARD.right = 0; }
+        else if (sym == SDLK_LEFT ) { KEYBOARD.left  = 0; }
+        else if (sym == SDLK_UP   ) { KEYBOARD.up    = 0; }
+        else if (sym == SDLK_DOWN ) { KEYBOARD.down  = 0; }
+        else if (sym == SDLK_z    ) { KEYBOARD.z     = 0; }
+    }
 
-        sym = EVENT.key.keysym.sym;
-
-        if (sym == SDLK_RIGHT) {
-            KEYBOARD.right = 1;
-        } else if (sym == SDLK_LEFT) {
-            KEYBOARD.left = 1;
-        } else if (sym == SDLK_UP) {
-            KEYBOARD.up = 1;
-        } else if (sym == SDLK_DOWN) {
-            KEYBOARD.down = 1;
-        } else if (sym == SDLK_z) {
-            KEYBOARD.z = 1;
-
+    if (EVENT.type == SDL_KEYDOWN) {
+        if (sym == SDLK_z) {
             if (GAME.state == STATE_IN_GAME) {
                 player_on_button_a_keydown(player);
             }
         }
     } else if (EVENT.type == SDL_KEYUP) {
-        if (EVENT.key.repeat) {
-            return;
-        }
-
-        sym = EVENT.key.keysym.sym;
-
-        if (sym == SDLK_RIGHT) {
-            KEYBOARD.right = 0;
-        } else if (sym == SDLK_LEFT) {
-            KEYBOARD.left = 0;
-        } else if (sym == SDLK_UP) {
-            KEYBOARD.up = 0;
-        } else if (sym == SDLK_DOWN) {
-            KEYBOARD.down = 0;
-        } else if (sym == SDLK_z) {
-            KEYBOARD.z = 0;
-
+        if (sym == SDLK_z) {
             if (GAME.state == STATE_WELCOME) {
                 GAME.state = STATE_IN_GAME;
             } else if (GAME.state == STATE_IN_GAME) {

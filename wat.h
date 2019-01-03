@@ -67,6 +67,17 @@ float vec2f_length(struct Vec2f *v);
 void vec2f_normalize(struct Vec2f *self);
 /* vec2f.h end */
 
+
+/* keys.h start */
+struct Keyboard {
+    int left;
+    int right;
+    int up;
+    int down;
+    int z;
+};
+/* keys.h end */
+
 /* ecs start */
 struct Entity {
     /* Position */
@@ -98,7 +109,7 @@ struct Entity {
 
 void mov_init(struct Entity *e, float x, float y, int w, int h, int v);
 void mov_update(struct Entity *es, int n);
-void mov_player_input(struct Entity *e);
+void mov_player_input(struct Keyboard *kb, struct Entity *player);
 
 void hea_init(struct Entity *e, int alive, int time_enabled, float time);
 void hea_kill_out_of_range(struct Entity *e, float xmin, float xmax, float ymin, float ymax);
@@ -114,10 +125,13 @@ void ren_update(struct Entity *es, int n, SDL_Color *color, SDL_Renderer *render
 /* util.h start */
 #define PI 3.14159265358979323846264338327950288
 
-double performance_counters_to_ms(Uint64 start, Uint64 end);
+double perf_counters_to_ms(Uint64 start, Uint64 end);
+
 void rand_init(tinymt32_t *state, uint32_t seed);
 int rand_n(tinymt32_t *state, int n);
 float fclamp(float f, float min, float max);
+float rad2deg(float rad);
+float deg2rad(float deg);
 /* util.h end */
 
 
@@ -160,10 +174,6 @@ void text_init(
 );
 
 void text_set_value(struct Text *text, char *value);
-void text_set_size(struct Text *text, int size);
-void text_set_align(struct Text *text, int align);
-void text_set_x(struct Text *text, float x);
-void text_set_y(struct Text *text, float y);
 
 void text_render_rune(
     struct Text  *self,
@@ -177,23 +187,10 @@ void text_render(struct Text *self, SDL_Renderer *renderer);
 /* text.h end */
 
 
-/* keys.h start */
-struct Keyboard {
-    int left;
-    int right;
-    int up;
-    int down;
-    int z;
-};
-/* keys.h end */
-
-
 /* player.h start */
-void player_on_button_a_keydown(struct Entity *e);
-void player_on_button_a_keyup(struct Entity *e);
 void player_fire(struct Entity *player);
 
-void player_fire_update();
+void player_fire_update(struct Entity *es, int n);
 /* player.h end */
 
 
@@ -203,7 +200,7 @@ struct EnemyManager {
     float        spacing;
 };
 
-void enemy_spawn();
+void enemy_spawn(struct EnemyManager *em, struct Entity *es);
 /* enemy.h end */
 
 
@@ -211,14 +208,12 @@ void enemy_spawn();
 struct Score {
     unsigned long value;
 };
-
-void score_init();
 /* score.h end */
 
 
 /* collision.h start */
-void col_player_vs_enemies();
-void col_enemies_vs_player_bullets();
+void col_player_vs_enemies(struct Entity *players, int players_n, struct Entity *enemies, int enemies_n);
+void col_enemies_vs_player_bullets(struct Entity *enemies, int enemies_n, struct Entity *bullets, int bullets_n);
 void col_explode(struct Entity *e);
 /* collision.h end */
 
@@ -265,11 +260,11 @@ void game_run(SDL_Renderer *renderer);
 
 
 /* input.h start */
-void input_update();
+void input_update(struct Keyboard *kb, SDL_Event *event, struct Entity *player);
 /* input.h end */
 
 
-void mov_fclamp_map(struct Entity *e);
+void mov_fclamp_map(struct Entity *es, int n);
 void hea_kill_out_of_map(struct Entity *es, int n);
 void hea_kill_time(struct Entity *es, int n);
 

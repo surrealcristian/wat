@@ -10,8 +10,7 @@
 
 /* config.h */
 #define PLAYER_MAX                 1
-#define BULLET_PER_PLAYER          128
-#define BULLET_MAX                 (PLAYER_MAX * BULLET_PER_PLAYER)
+#define PLAYER_BULLET_MAX          (PLAYER_MAX * 128)
 #define ENEMY_MAX                  64
 #define PARTICLE_MAX               128
 
@@ -22,9 +21,7 @@
 #define MS_PER_UPDATE 8.33 /* 1000 / 120.0 */
 #define SLEEP_MS 2.08 /* 1000 / 480.0 */
 
-#define STATE_WELCOME 0
-#define STATE_IN_GAME 1
-#define STATE_PAUSE   2
+enum GameState { GAME_STATE_WELCOME, GAME_STATE_IN_GAME, GAME_STATE_PAUSE };
 
 #define PLAYER_WIDTH 16
 #define PLAYER_HEIGHT 32
@@ -35,6 +32,12 @@
 #define PLAYER_BULLETS_W 8
 #define PLAYER_BULLETS_H 128
 #define PLAYER_BULLETS_V 2048
+
+#define ENEMY_BULLET_MAX (ENEMY_MAX * 8)
+#define ENEMY_BULLETS_INIT_N 1
+#define ENEMY_BULLETS_W 8
+#define ENEMY_BULLETS_H 8
+#define ENEMY_BULLETS_V 512
 
 #define ENEMY_WIDTH 32
 #define ENEMY_HEIGHT 32
@@ -56,16 +59,17 @@ extern float EXPLOSION_PARTICLES_VY[4];
 /* config.h */
 
 
-/* vec2f.h start */
-struct Vec2f {
+/* vector.h start */
+struct Vector {
     float x;
     float y;
 };
 
-void vec2f_set_xy(struct Vec2f *self, float x, float y);
-float vec2f_length(struct Vec2f *v);
-void vec2f_normalize(struct Vec2f *self);
-/* vec2f.h end */
+void vector_set_xy(struct Vector *self, float x, float y);
+float vector_length(struct Vector *v);
+void vector_normalize(struct Vector *self);
+float vector_way_to(struct Vector *a, struct Vector *b);
+/* vector.h end */
 
 
 /* keys.h start */
@@ -81,7 +85,7 @@ struct Keyboard {
 /* ecs start */
 struct Entity {
     /* Position */
-    struct Vec2f pos_pos;
+    struct Vector pos_pos;
     int          pos_w;
     int          pos_h;
 
@@ -136,13 +140,9 @@ float deg2rad(float deg);
 
 
 /* text.h start */
-#define TEXT_SIZE_SMALL  0
-#define TEXT_SIZE_MEDIUM 1
-#define TEXT_SIZE_LARGE  2
+enum TextSize { TEXT_SIZE_SMALL, TEXT_SIZE_MEDIUM, TEXT_SIZE_LARGE };
 
-#define TEXT_ALIGN_LEFT   0
-#define TEXT_ALIGN_CENTER 1
-#define TEXT_ALIGN_RIGHT  2
+enum TextAlign { TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, TEXT_ALIGN_RIGHT };
 
 #define RUNE_SMALL_PX  2
 #define RUNE_MEDIUM_PX 4
@@ -153,24 +153,23 @@ float deg2rad(float deg);
 #define RUNE_SPACE_W 1
 
 struct Text {
-    SDL_Rect rect;
-    char     *value;
-    int      size;
-    int      align;
-    float    x;
-    float    y;
-
-    int      value_len;
-    int      size_px;
+    SDL_Rect       rect;
+    char           *value;
+    enum TextSize  size;
+    enum TextAlign align;
+    float          x;
+    float          y;
+    int            value_len;
+    int            size_px;
 };
 
 void text_init(
-    struct Text *text,
-    char        *value,
-    int         size,
-    int         align,
-    float       x,
-    float       y
+    struct Text    *text,
+    char           *value,
+    enum TextSize  size,
+    enum TextAlign align,
+    float          x,
+    float          y
 );
 
 void text_set_value(struct Text *text, char *value);
@@ -251,7 +250,7 @@ void pause_state_render(SDL_Renderer *renderer);
 
 /* game.h start */
 struct Game {
-    int state;
+    enum GameState state;
 };
 
 void game_init();

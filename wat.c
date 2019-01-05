@@ -33,7 +33,8 @@ SDL_Color COLOR_YELLOW  = { .r = 220, .g = 196, .b = 87 , .a = 255 };
 
 struct Entity PLAYERS[PLAYER_MAX];
 struct Entity ENEMIES[ENEMY_MAX];
-struct Entity BULLETS[BULLET_MAX];
+struct Entity PLAYER_BULLETS[PLAYER_BULLET_MAX];
+struct Entity ENEMY_BULLETS[ENEMY_BULLET_MAX];
 struct Entity PARTICLES[PARTICLE_MAX];
 
 tinymt32_t          TINYMT_STATE;
@@ -61,21 +62,25 @@ float deg2rad(float deg) { return deg * (PI / 180); }
 /* util.c end */
 
 
-/* vec2f.c start */
-void vec2f_set_xy(struct Vec2f *self, float x, float y) {
+/* vector.c start */
+void vector_set_xy(struct Vector *self, float x, float y) {
     self->x = x;
     self->y = y;
 }
 
-float vec2f_length(struct Vec2f *v) { return sqrt((v->x * v->x) + (v->y * v->y)); }
+float vector_length(struct Vector *v) { return sqrt((v->x * v->x) + (v->y * v->y)); }
 
-void vec2f_normalize(struct Vec2f *self) {
-    float length = vec2f_length(self);
+void vector_normalize(struct Vector *self) {
+    float length = vector_length(self);
 
     self->x /= length;
     self->y /= length;
 }
-/* vec2f.c end */
+
+float vector_way_to(struct Vector *a, struct Vector *b) {
+    return atan2(b->x - a->x, -(b->y - a->y)) * 180 / PI;
+}
+/* vector.c end */
 
 
 /* text.c start */
@@ -125,12 +130,12 @@ int RUNES[36][25] = {
 };
 
 void text_init(
-    struct Text *self,
-    char        *value,
-    int         size,
-    int         align,
-    float       x,
-    float       y
+    struct Text    *self,
+    char           *value,
+    enum TextSize  size,
+    enum TextAlign align,
+    float          x,
+    float          y
 ) {
     self->value = value;
     self->size  = size;
@@ -209,7 +214,7 @@ void text_render(struct Text  *self, SDL_Renderer *renderer) {
 float PLAYER_BULLETS_OFFSET_X[5] = { +0.00, -0.75, +0.75, -1.50, +1.50 };
 float PLAYER_BULLETS_OFFSET_Y[5] = { -1.00, -0.50, -0.50, +0.00, +0.00 };
 
-struct Vec2f PLAYER_BULLETS_OFFSET[5] = {
+struct Vector PLAYER_BULLETS_OFFSET[5] = {
     { .x = +0.00, .y = -1.00 },
     { .x = -0.75, .y = -0.50 },
     { .x = +0.75, .y = -0.50 },
@@ -220,7 +225,7 @@ struct Vec2f PLAYER_BULLETS_OFFSET[5] = {
 float EXPLOSION_PARTICLES_VX[4] = { -1.00, +1.00, -1.00, +1.00 };
 float EXPLOSION_PARTICLES_VY[4] = { -1.00, -1.00, +1.00, +1.00 };
 
-struct Vec2f EXPLOSION_PARTICLES_DIR[4] = {
+struct Vector EXPLOSION_PARTICLES_DIR[4] = {
     { .x = -1.0, .y = -1.0 },
     { .x = +1.0, .y = -1.0 },
     { .x = -1.0, .y = +1.0 },
@@ -232,7 +237,7 @@ struct Vec2f EXPLOSION_PARTICLES_DIR[4] = {
 /* player.c start */
 void player_fire(struct Entity *player) {
     for (int i = 0; i < player->sho_bullets_n; i++) {
-        struct Entity *bullet = hea_get_dead(BULLETS, BULLET_MAX);
+        struct Entity *bullet = hea_get_dead(PLAYER_BULLETS, PLAYER_BULLET_MAX);
 
         if (bullet == NULL) {
             return;
@@ -288,6 +293,44 @@ void enemy_spawn(struct EnemyManager *em, struct Entity *es) {
         enemy->mov_dir = 180;
 
         em->time = 0.0;
+    }
+}
+
+void enemy_fire(struct Entity *enemy) {
+    for (int i = 0; i < enemy->sho_bullets_n; i++) {
+        struct Entity *bullet = hea_get_dead(ENEMY_BULLETS, ENEMY_BULLET_MAX);
+
+        if (bullet == NULL) {
+            return;
+        }
+
+        //SDL_Log("INSIDE ENEMY_FIRE"); //TODO: delete
+
+        bullet->hea_alive = 1;
+
+        //TODO: fix
+        float x = enemy->pos_pos.x + enemy->pos_w;
+        float y = enemy->pos_pos.y + enemy->pos_h;
+
+        bullet->pos_pos.x = x;
+        bullet->pos_pos.y = y;
+
+        bullet->mov_dir = 0.0;
+    }
+}
+
+void enemy_fire_update(struct Entity *es, int n) {
+    for (int i = 0; i < n; i++) {
+        struct Entity *e = &es[i];
+
+        if (e->hea_alive == 0) { continue; }
+
+        e->sho_fire_time += MS_PER_UPDATE;
+
+        if (e->sho_fire_time >= e->sho_fire_spacing) {
+            enemy_fire(&es[i]);
+            e->sho_fire_time = 0.0;
+        }
     }
 }
 /* enemy.c end */
@@ -392,27 +435,32 @@ void in_game_state_update() {
 
     mov_player_input(&KEYBOARD, player);
 
-    mov_update(PLAYERS  , PLAYER_MAX  );
-    mov_update(ENEMIES  , ENEMY_MAX   );
-    mov_update(BULLETS  , BULLET_MAX  );
-    mov_update(PARTICLES, PARTICLE_MAX);
+    mov_update(PLAYERS       , PLAYER_MAX       );
+    mov_update(ENEMIES       , ENEMY_MAX        );
+    mov_update(PLAYER_BULLETS, PLAYER_BULLET_MAX);
+    mov_update(ENEMY_BULLETS , ENEMY_BULLET_MAX );
+    mov_update(PARTICLES     , PARTICLE_MAX     );
 
     player_fire_update(PLAYERS, PLAYER_MAX);
+    enemy_fire_update(ENEMIES, ENEMY_MAX);
 
     mov_fclamp_map(PLAYERS, PLAYER_MAX);
 
-    hea_kill_out_of_map(BULLETS  , BULLET_MAX  );
-    hea_kill_out_of_map(ENEMIES  , ENEMY_MAX   );
-    hea_kill_out_of_map(PARTICLES, PARTICLE_MAX);
+    hea_kill_out_of_map(PLAYER_BULLETS, PLAYER_BULLET_MAX);
+    hea_kill_out_of_map(ENEMY_BULLETS , ENEMY_BULLET_MAX );
+    hea_kill_out_of_map(ENEMIES       , ENEMY_MAX        );
+    hea_kill_out_of_map(PARTICLES     , PARTICLE_MAX     );
 
     hea_kill_time(PARTICLES, PARTICLE_MAX);
 
-    col_sync(PLAYERS, PLAYER_MAX);
-    col_sync(ENEMIES, ENEMY_MAX );
-    col_sync(BULLETS, BULLET_MAX);
+    col_sync(PLAYERS       , PLAYER_MAX       );
+    col_sync(ENEMIES       , ENEMY_MAX        );
+    col_sync(PLAYER_BULLETS, PLAYER_BULLET_MAX);
+    col_sync(ENEMY_BULLETS , ENEMY_BULLET_MAX );
 
+    //TODO: add col_player_vs_enemy_bullets()
     col_player_vs_enemies(PLAYERS, PLAYER_MAX, ENEMIES, ENEMY_MAX);
-    col_enemies_vs_player_bullets(ENEMIES, ENEMY_MAX, BULLETS, BULLET_MAX);
+    col_enemies_vs_player_bullets(ENEMIES, ENEMY_MAX, PLAYER_BULLETS, PLAYER_BULLET_MAX);
 
     enemy_spawn(&ENEMY_MANAGER, ENEMIES);
 
@@ -420,15 +468,17 @@ void in_game_state_update() {
 }
 
 void in_game_state_render(SDL_Renderer *renderer) {
-    ren_sync(PARTICLES, PARTICLE_MAX);
-    ren_sync(PLAYERS  , PLAYER_MAX  );
-    ren_sync(ENEMIES  , ENEMY_MAX   );
-    ren_sync(BULLETS  , BULLET_MAX  );
+    ren_sync(PARTICLES     , PARTICLE_MAX     );
+    ren_sync(PLAYERS       , PLAYER_MAX       );
+    ren_sync(ENEMIES       , ENEMY_MAX        );
+    ren_sync(PLAYER_BULLETS, PLAYER_BULLET_MAX);
+    ren_sync(ENEMY_BULLETS , ENEMY_BULLET_MAX );
 
-    ren_update(PARTICLES, PARTICLE_MAX, &COLOR_ORANGE, renderer);
-    ren_update(BULLETS  , BULLET_MAX  , &COLOR_YELLOW, renderer);
-    ren_update(ENEMIES  , ENEMY_MAX   , &COLOR_BLUE  , renderer);
-    ren_update(PLAYERS  , PLAYER_MAX  , &COLOR_RED   , renderer);
+    ren_update(PARTICLES     , PARTICLE_MAX     , &COLOR_ORANGE, renderer);
+    ren_update(PLAYER_BULLETS, ENEMY_BULLET_MAX , &COLOR_YELLOW, renderer);
+    ren_update(ENEMY_BULLETS , PLAYER_BULLET_MAX, &COLOR_YELLOW, renderer);
+    ren_update(ENEMIES       , ENEMY_MAX        , &COLOR_BLUE  , renderer);
+    ren_update(PLAYERS       , PLAYER_MAX       , &COLOR_RED   , renderer);
 
     hud_render(renderer);
 }
@@ -441,15 +491,17 @@ void pause_state_update() {
 }
 
 void pause_state_render(SDL_Renderer *renderer) {
-    ren_sync(PARTICLES, PARTICLE_MAX);
-    ren_sync(PLAYERS  , PLAYER_MAX  );
-    ren_sync(ENEMIES  , ENEMY_MAX   );
-    ren_sync(BULLETS  , BULLET_MAX  );
+    ren_sync(PARTICLES     , PARTICLE_MAX     );
+    ren_sync(PLAYERS       , PLAYER_MAX       );
+    ren_sync(ENEMIES       , ENEMY_MAX        );
+    ren_sync(PLAYER_BULLETS, PLAYER_BULLET_MAX);
+    ren_sync(ENEMY_BULLETS , ENEMY_BULLET_MAX );
 
-    ren_update(PARTICLES, PARTICLE_MAX, &COLOR_ORANGE, renderer);
-    ren_update(BULLETS  , BULLET_MAX  , &COLOR_ORANGE, renderer);
-    ren_update(ENEMIES  , ENEMY_MAX   , &COLOR_BLUE  , renderer);
-    ren_update(PLAYERS  , PLAYER_MAX  , &COLOR_RED   , renderer);
+    ren_update(PARTICLES     , PARTICLE_MAX     , &COLOR_ORANGE, renderer);
+    ren_update(PLAYER_BULLETS, PLAYER_BULLET_MAX, &COLOR_ORANGE, renderer);
+    ren_update(ENEMY_BULLETS , ENEMY_BULLET_MAX , &COLOR_ORANGE, renderer);
+    ren_update(ENEMIES       , ENEMY_MAX        , &COLOR_BLUE  , renderer);
+    ren_update(PLAYERS       , PLAYER_MAX       , &COLOR_RED   , renderer);
 
     hud_render(renderer);
 
@@ -460,15 +512,17 @@ void pause_state_render(SDL_Renderer *renderer) {
 
 /* game.c start */
 void game_init() {
-    GAME.state = STATE_WELCOME;
+    GAME.state = GAME_STATE_WELCOME;
 }
 
 void game_run(SDL_Renderer *renderer) {
     int keep_running = 1;
 
     Uint64 debug_start;
-    Uint64 debug_end;
-    double debug_elapsed;
+    Uint64 debug_update_end;
+    double debug_update_elapsed;
+    Uint64 debug_render_end;
+    double debug_render_elapsed;
 
     Uint64 current;
     double elapsed;
@@ -496,9 +550,9 @@ void game_run(SDL_Renderer *renderer) {
         }
 
         while (lag >= MS_PER_UPDATE) {
-            if      (GAME.state == STATE_WELCOME) { welcome_state_update(); }
-            else if (GAME.state == STATE_IN_GAME) { in_game_state_update(); }
-            else if (GAME.state == STATE_PAUSE  ) { pause_state_update();   }
+            if      (GAME.state == GAME_STATE_WELCOME) { welcome_state_update(); }
+            else if (GAME.state == GAME_STATE_IN_GAME) { in_game_state_update(); }
+            else if (GAME.state == GAME_STATE_PAUSE  ) { pause_state_update();   }
 
             lag -= MS_PER_UPDATE;
         }
@@ -508,24 +562,27 @@ void game_run(SDL_Renderer *renderer) {
         SDL_SetRenderDrawColor(renderer, 43, 43, 43, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
-        if      (GAME.state == STATE_WELCOME) { welcome_state_render(renderer); }
-        else if (GAME.state == STATE_IN_GAME) { in_game_state_render(renderer); }
-        else if (GAME.state == STATE_PAUSE  ) { pause_state_render(renderer);   }
+        if      (GAME.state == GAME_STATE_WELCOME) { welcome_state_render(renderer); }
+        else if (GAME.state == GAME_STATE_IN_GAME) { in_game_state_render(renderer); }
+        else if (GAME.state == GAME_STATE_PAUSE  ) { pause_state_render(renderer);   }
 
         /* ----- */
-        debug_end = SDL_GetPerformanceCounter();
-        debug_elapsed = perf_counters_to_ms(debug_start, debug_end);
-
-        /*
-        if (GAME.state == STATE_IN_GAME) {
-            SDL_Log("%f", debug_elapsed);
-        }
-        */
+        debug_update_end = SDL_GetPerformanceCounter();
+        debug_update_elapsed = perf_counters_to_ms(debug_start, debug_update_end);
         /* ----- */
 
         SDL_RenderPresent(renderer);
 
-        /* SDL_Delay(SLEEP_MS); */
+        /* ----- */
+        debug_render_end = SDL_GetPerformanceCounter();
+        debug_render_elapsed = perf_counters_to_ms(debug_start, debug_render_end);
+
+        if (GAME.state == GAME_STATE_IN_GAME && debug_render_elapsed > 2.0) {
+            SDL_Log("UPDATE: %f, RENDER: %f", debug_update_elapsed, debug_render_elapsed);
+        }
+        /* ----- */
+
+        SDL_Delay(SLEEP_MS);
     }
 }
 /* game.c end */
@@ -534,7 +591,7 @@ void game_run(SDL_Renderer *renderer) {
 /* input.c start */
 void input_update(struct Keyboard *kb, SDL_Event *ev, struct Entity *player) {
     if (ev->type != SDL_KEYDOWN && ev->type != SDL_KEYUP) { return; }
-    if (ev->key.repeat                                    ) { return; }
+    if (ev->key.repeat                                  ) { return; }
 
     int sym = ev->key.keysym.sym;
 
@@ -554,24 +611,24 @@ void input_update(struct Keyboard *kb, SDL_Event *ev, struct Entity *player) {
 
     if (ev->type == SDL_KEYDOWN) {
         if (sym == SDLK_z) {
-            if (GAME.state == STATE_IN_GAME) {
+            if (GAME.state == GAME_STATE_IN_GAME) {
                 player->sho_firing = 1;
                 player->sho_fire_time = player->sho_fire_spacing * 1.0;
             }
         }
     } else if (ev->type == SDL_KEYUP) {
         if (sym == SDLK_z) {
-            if (GAME.state == STATE_WELCOME) {
-                GAME.state = STATE_IN_GAME;
-            } else if (GAME.state == STATE_IN_GAME) {
+            if (GAME.state == GAME_STATE_WELCOME) {
+                GAME.state = GAME_STATE_IN_GAME;
+            } else if (GAME.state == GAME_STATE_IN_GAME) {
                 player->sho_firing = 0;
                 player->sho_fire_time = 0.0;
             }
         } else if (sym == SDLK_ESCAPE) {
-            if (GAME.state == STATE_IN_GAME) {
-                GAME.state = STATE_PAUSE;
-            } else if (GAME.state == STATE_PAUSE) {
-                GAME.state = STATE_IN_GAME;
+            if (GAME.state == GAME_STATE_IN_GAME) {
+                GAME.state = GAME_STATE_PAUSE;
+            } else if (GAME.state == GAME_STATE_PAUSE) {
+                GAME.state = GAME_STATE_IN_GAME;
             }
         }
     }
@@ -620,18 +677,21 @@ void mov_update(struct Entity *es, int n) {
 }
 
 void mov_player_input(struct Keyboard *kb, struct Entity *player) {
-    /* TODO: improve implementation */
-    float dir = 0.0;
-    float vel = 0;
+    struct Vector vo = { .x = 0, .y = 0 };
+    struct Vector vd = { .x = 0, .y = 0 };
 
-    if      (kb->up   && kb->left ) { dir = 315.0; vel = PLAYER_V; }
-    else if (kb->up   && kb->right) { dir = 045.0; vel = PLAYER_V; }
-    else if (kb->down && kb->left ) { dir = 225.0; vel = PLAYER_V; }
-    else if (kb->down && kb->right) { dir = 135.0; vel = PLAYER_V; }
-    else if (kb->up               ) { dir = 000.0; vel = PLAYER_V; }
-    else if (kb->down             ) { dir = 180.0; vel = PLAYER_V; }
-    else if (kb->left             ) { dir = 270.0; vel = PLAYER_V; }
-    else if (kb->right            ) { dir = 090.0; vel = PLAYER_V; }
+    if (kb->left ) { vd.x -= 1; }
+    if (kb->right) { vd.x += 1; }
+    if (kb->up   ) { vd.y -= 1; }
+    if (kb->down ) { vd.y += 1; }
+
+    float dir = vector_way_to(&vo, &vd);
+
+    if (dir < 0) { dir += 360; }
+
+    int vel = 0.0;
+
+    if (vd.x != 0 || vd.y != 0) { vel = PLAYER_V; }
 
     player->mov_dir = dir;
     player->mov_vel = vel;
@@ -770,8 +830,8 @@ int main(void) {
 
     renderer = SDL_CreateRenderer(
         window, -1,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-        /* SDL_RENDERER_ACCELERATED */
+        /* SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC */
+        SDL_RENDERER_ACCELERATED
     );
 
     if (renderer == NULL) {
@@ -785,9 +845,16 @@ int main(void) {
 
     rand_init(&TINYMT_STATE, time(NULL));
 
-    for (int i = 0; i < BULLET_MAX; i++) {
-        mov_init(&BULLETS[i], 0, 0, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
-        hea_init(&BULLETS[i], 0, 0, 0.0);
+    /* init player bullets */
+    for (int i = 0; i < PLAYER_BULLET_MAX; i++) {
+        mov_init(&PLAYER_BULLETS[i], 0, 0, PLAYER_BULLETS_W, PLAYER_BULLETS_H, PLAYER_BULLETS_V);
+        hea_init(&PLAYER_BULLETS[i], 0, 0, 0.0);
+    }
+
+    /* init enemy bullets */
+    for (int i = 0; i < ENEMY_BULLET_MAX; i++) {
+        mov_init(&ENEMY_BULLETS[i], 0, 0, ENEMY_BULLETS_W, ENEMY_BULLETS_H, ENEMY_BULLETS_V);
+        hea_init(&ENEMY_BULLETS[i], 0, 0, 0.0);
     }
 
     /* init players */
@@ -806,6 +873,9 @@ int main(void) {
     for (int i = 0; i < ENEMY_MAX; i++) {
         mov_init(&ENEMIES[i], 0, 0, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_V);
         hea_init(&ENEMIES[i], 0, 0, 0.0);
+
+        ENEMIES[i].sho_bullets_n = ENEMY_BULLETS_INIT_N;
+        ENEMIES[i].sho_fire_spacing = 128;
     }
 
     /* init particles */

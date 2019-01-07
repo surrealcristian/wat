@@ -24,12 +24,16 @@ White	#eeeeee	238 238 238
 Yellow	#dcc457	220 196 87
 
 */
-SDL_Color COLOR_BLUE    = { .r = 83 , .g = 148, .b = 236, .a = 255 };
-SDL_Color COLOR_ORANGE  = { .r = 255, .g = 165, .b = 0  , .a = 255 };
+SDL_Color COLOR_BLACK   = { .r =   0, .g =   0, .b =   0, .a = 255 };
+SDL_Color COLOR_BLUE    = { .r =  83, .g = 148, .b = 236, .a = 255 };
+SDL_Color COLOR_CYAN    = { .r =  41, .g = 153, .b = 153, .a = 255 };
+SDL_Color COLOR_GRAY    = { .r =  85, .g =  85, .b =  85, .a = 255 };
+SDL_Color COLOR_GREEN   = { .r =  55, .g = 156, .b =  26, .a = 255 };
+SDL_Color COLOR_ORANGE  = { .r = 255, .g = 165, .b =   0, .a = 255 };
 SDL_Color COLOR_MAGENTA = { .r = 174, .g = 138, .b = 190, .a = 255 };
-SDL_Color COLOR_RED     = { .r = 231, .g = 70 , .b = 68 , .a = 255 };
+SDL_Color COLOR_RED     = { .r = 231, .g =  70, .b =  68, .a = 255 };
 SDL_Color COLOR_WHITE   = { .r = 238, .g = 238, .b = 238, .a = 255 };
-SDL_Color COLOR_YELLOW  = { .r = 220, .g = 196, .b = 87 , .a = 255 };
+SDL_Color COLOR_YELLOW  = { .r = 220, .g = 196, .b =  87, .a = 255 };
 
 struct Entity PLAYERS[PLAYER_MAX];
 struct Entity ENEMIES[ENEMY_MAX];
@@ -78,7 +82,7 @@ void vector_normalize(struct Vector *self) {
 }
 
 float vector_way_to(struct Vector *a, struct Vector *b) {
-    return atan2(b->x - a->x, -(b->y - a->y)) * 180 / PI;
+    return rad2deg(atan2(b->x - a->x, -(b->y - a->y)));
 }
 /* vector.c end */
 
@@ -296,7 +300,7 @@ void enemy_spawn(struct EnemyManager *em, struct Entity *es) {
     }
 }
 
-void enemy_fire(struct Entity *enemy) {
+void enemy_fire(struct Entity *enemy, struct Entity *player) {
     for (int i = 0; i < enemy->sho_bullets_n; i++) {
         struct Entity *bullet = hea_get_dead(ENEMY_BULLETS, ENEMY_BULLET_MAX);
 
@@ -304,22 +308,16 @@ void enemy_fire(struct Entity *enemy) {
             return;
         }
 
-        //SDL_Log("INSIDE ENEMY_FIRE"); //TODO: delete
-
         bullet->hea_alive = 1;
 
-        //TODO: fix
-        float x = enemy->pos_pos.x + enemy->pos_w;
-        float y = enemy->pos_pos.y + enemy->pos_h;
+        bullet->pos_pos.x = enemy->pos_pos.x;
+        bullet->pos_pos.y = enemy->pos_pos.y;
 
-        bullet->pos_pos.x = x;
-        bullet->pos_pos.y = y;
-
-        bullet->mov_dir = 0.0;
+        bullet->mov_dir = vector_way_to(&enemy->pos_pos, &player->pos_pos); //TODO: fix
     }
 }
 
-void enemy_fire_update(struct Entity *es, int n) {
+void enemy_fire_update(struct Entity *es, int n, struct Entity *player) {
     for (int i = 0; i < n; i++) {
         struct Entity *e = &es[i];
 
@@ -328,7 +326,7 @@ void enemy_fire_update(struct Entity *es, int n) {
         e->sho_fire_time += MS_PER_UPDATE;
 
         if (e->sho_fire_time >= e->sho_fire_spacing) {
-            enemy_fire(&es[i]);
+            enemy_fire(&es[i], player);
             e->sho_fire_time = 0.0;
         }
     }
@@ -442,7 +440,7 @@ void in_game_state_update() {
     mov_update(PARTICLES     , PARTICLE_MAX     );
 
     player_fire_update(PLAYERS, PLAYER_MAX);
-    enemy_fire_update(ENEMIES, ENEMY_MAX);
+    enemy_fire_update(ENEMIES, ENEMY_MAX, player);
 
     mov_fclamp_map(PLAYERS, PLAYER_MAX);
 
@@ -474,11 +472,11 @@ void in_game_state_render(SDL_Renderer *renderer) {
     ren_sync(PLAYER_BULLETS, PLAYER_BULLET_MAX);
     ren_sync(ENEMY_BULLETS , ENEMY_BULLET_MAX );
 
-    ren_update(PARTICLES     , PARTICLE_MAX     , &COLOR_ORANGE, renderer);
-    ren_update(PLAYER_BULLETS, ENEMY_BULLET_MAX , &COLOR_YELLOW, renderer);
-    ren_update(ENEMY_BULLETS , PLAYER_BULLET_MAX, &COLOR_YELLOW, renderer);
-    ren_update(ENEMIES       , ENEMY_MAX        , &COLOR_BLUE  , renderer);
-    ren_update(PLAYERS       , PLAYER_MAX       , &COLOR_RED   , renderer);
+    ren_update(PARTICLES     , PARTICLE_MAX     , &COLOR_ORANGE , renderer);
+    ren_update(PLAYER_BULLETS, PLAYER_BULLET_MAX, &COLOR_YELLOW , renderer);
+    ren_update(ENEMY_BULLETS , ENEMY_BULLET_MAX , &COLOR_MAGENTA, renderer);
+    ren_update(ENEMIES       , ENEMY_MAX        , &COLOR_BLUE   , renderer);
+    ren_update(PLAYERS       , PLAYER_MAX       , &COLOR_RED    , renderer);
 
     hud_render(renderer);
 }
@@ -868,14 +866,14 @@ int main(void) {
 
     /* init enemies */
     ENEMY_MANAGER.time    = 0.0;
-    ENEMY_MANAGER.spacing = 32.0;
+    ENEMY_MANAGER.spacing = 128.0;
 
     for (int i = 0; i < ENEMY_MAX; i++) {
         mov_init(&ENEMIES[i], 0, 0, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_V);
         hea_init(&ENEMIES[i], 0, 0, 0.0);
 
         ENEMIES[i].sho_bullets_n = ENEMY_BULLETS_INIT_N;
-        ENEMIES[i].sho_fire_spacing = 128;
+        ENEMIES[i].sho_fire_spacing = 2048;
     }
 
     /* init particles */

@@ -30,14 +30,14 @@ enum GameState { GAME_STATE_WELCOME, GAME_STATE_IN_GAME, GAME_STATE_PAUSE };
 #define PLAYER_BULLETS_MAX 128
 #define PLAYER_BULLETS_INIT_N 5
 #define PLAYER_BULLETS_W 8
-#define PLAYER_BULLETS_H 128
+#define PLAYER_BULLETS_H 8
 #define PLAYER_BULLETS_V 2048
 
 #define ENEMY_BULLET_MAX (ENEMY_MAX * 8)
 #define ENEMY_BULLETS_INIT_N 1
 #define ENEMY_BULLETS_W 8
 #define ENEMY_BULLETS_H 8
-#define ENEMY_BULLETS_V 512
+#define ENEMY_BULLETS_V 256
 
 #define ENEMY_WIDTH 32
 #define ENEMY_HEIGHT 32
@@ -200,6 +200,9 @@ struct EnemyManager {
 };
 
 void enemy_spawn(struct EnemyManager *em, struct Entity *es);
+void enemy_fire(struct Entity *enemy, struct Entity *player);
+void enemy_fire_update(struct Entity *es, int n, struct Entity *player);
+
 /* enemy.h end */
 
 

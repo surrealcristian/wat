@@ -24,7 +24,7 @@
 enum GameState { GAME_STATE_WELCOME, GAME_STATE_IN_GAME, GAME_STATE_PAUSE };
 
 #define PLAYER_WIDTH 16
-#define PLAYER_HEIGHT 32
+#define PLAYER_HEIGHT 16
 #define PLAYER_V 512
 
 #define PLAYER_BULLETS_MAX 128
@@ -34,14 +34,14 @@ enum GameState { GAME_STATE_WELCOME, GAME_STATE_IN_GAME, GAME_STATE_PAUSE };
 #define PLAYER_BULLETS_V 2048
 
 #define ENEMY_BULLET_MAX (ENEMY_MAX * 8)
-#define ENEMY_BULLETS_INIT_N 1
-#define ENEMY_BULLETS_W 8
-#define ENEMY_BULLETS_H 8
-#define ENEMY_BULLETS_V 256
+#define ENEMY_BULLET_INIT_N 1
+#define ENEMY_BULLET_W 8
+#define ENEMY_BULLET_H 8
+#define ENEMY_BULLET_V 1024
 
-#define ENEMY_WIDTH 32
-#define ENEMY_HEIGHT 32
-#define ENEMY_V 128
+#define ENEMY_WIDTH 16
+#define ENEMY_HEIGHT 16
+#define ENEMY_V 1024
 
 #define PARTICLE_WIDTH 8
 #define PARTICLE_HEIGHT 8
@@ -89,14 +89,17 @@ struct Entity {
     int          pos_w;
     int          pos_h;
 
+    /* Size */
+    int size;
+
     /* Movement */
     float mov_dir;
     int   mov_vel;
 
     /* Health */
+    int   hea_hp;
     int   hea_time_enabled;
     float hea_time;
-    int   hea_alive;
 
     /* Shooting */
     int   sho_bullets_n;
@@ -115,7 +118,7 @@ void mov_init(struct Entity *e, float x, float y, int w, int h, int v);
 void mov_update(struct Entity *es, int n);
 void mov_player_input(struct Keyboard *kb, struct Entity *player);
 
-void hea_init(struct Entity *e, int alive, int time_enabled, float time);
+void hea_init(struct Entity *e, int hp, int time_enabled, float time);
 void hea_kill_out_of_range(struct Entity *e, float xmin, float xmax, float ymin, float ymax);
 struct Entity *hea_get_dead(struct Entity *es, int n);
 
@@ -214,6 +217,7 @@ struct Score {
 
 
 /* collision.h start */
+void col_entities_vs_entities(struct Entity *as, int as_n, struct Entity *bs, int bs_n);
 void col_player_vs_enemies(struct Entity *players, int players_n, struct Entity *enemies, int enemies_n);
 void col_enemies_vs_player_bullets(struct Entity *enemies, int enemies_n, struct Entity *bullets, int bullets_n);
 void col_explode(struct Entity *e);

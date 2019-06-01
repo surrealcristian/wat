@@ -9,10 +9,12 @@
 
 
 /* config.h */
-#define PLAYER_MAX                 1
-#define PLAYER_BULLET_MAX          (PLAYER_MAX * 128)
-#define ENEMY_MAX                  64
-#define PARTICLE_MAX               128
+#define FPS_DELTA_MAX     64
+#define FPS_DELTA_INIT    16.66 /* 1000 / 60 */
+#define PLAYER_MAX        1
+#define PLAYER_BULLET_MAX (PLAYER_MAX * 128)
+#define ENEMY_MAX         64
+#define PARTICLE_MAX      128
 
 #define WINDOW_W 480
 #define WINDOW_H 640
@@ -57,6 +59,19 @@ extern float PLAYER_BULLETS_OFFSET_Y[5];
 extern float EXPLOSION_PARTICLES_VX[4];
 extern float EXPLOSION_PARTICLES_VY[4];
 /* config.h */
+
+/* fps.h start */
+struct Fps {
+    Uint64 last_end;
+    double deltas[FPS_DELTA_MAX];
+    Uint64 counter;
+};
+
+void fps_init(struct Fps *self);
+void fps_add_delta(struct Fps *self);
+double fps_get(struct Fps *self);
+/* fps.h end */
+
 
 
 /* vector.h start */

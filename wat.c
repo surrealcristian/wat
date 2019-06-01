@@ -38,6 +38,7 @@ struct Text         HUD_TEXT;
 struct HUD          HUD;
 struct Text         PAUSE_TEXT;
 struct Game         GAME;
+struct Fps          FPS;
 
 
 
@@ -51,6 +52,39 @@ float fclamp(float f, float min, float max) { return fmin(fmax(f, min), max); }
 float rad2deg(float rad) { return rad * (180 / PI); }
 float deg2rad(float deg) { return deg * (PI / 180); }
 /* util.c end */
+
+/* fps.c start */
+void fps_init(struct Fps *self) {
+    self->last_end = SDL_GetPerformanceCounter();
+
+    for (int i = 0; i < FPS_DELTA_MAX; i++) {
+        self->deltas[i] = FPS_DELTA_INIT;
+    }
+}
+
+void fps_add_delta(struct Fps *self) {
+    double ms = perf_counters_to_ms(self->last_end, SDL_GetPerformanceCounter());
+
+    int i = self->counter++ % FPS_DELTA_MAX;
+
+    self->deltas[i] = ms;
+
+    self->last_end = SDL_GetPerformanceCounter();
+}
+
+double fps_get(struct Fps *self) {
+    double accum = 0;
+
+    for (int i = 0; i < FPS_DELTA_MAX; i++) {
+        accum += self->deltas[i];
+    }
+
+    double avg = (accum * 1.0) / FPS_DELTA_MAX;
+    double fps = 1000.0 / avg;
+
+    return fps;
+}
+/* fps.c end */
 
 
 /* vector.c start */
@@ -557,6 +591,8 @@ void game_run(SDL_Renderer *renderer) {
 
         /* RENDER */
 
+        SDL_Log("FPS: %f", fps_get(&FPS));
+
         SDL_SetRenderDrawColor(renderer, 43, 43, 43, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
@@ -571,13 +607,11 @@ void game_run(SDL_Renderer *renderer) {
 
         SDL_RenderPresent(renderer);
 
+        fps_add_delta(&FPS);
+
         /* ----- */
         debug_render_end = SDL_GetPerformanceCounter();
         debug_render_elapsed = perf_counters_to_ms(debug_start, debug_render_end);
-
-        if (GAME.state == GAME_STATE_IN_GAME && debug_render_elapsed > 2.0) {
-            //SDL_Log("UPDATE: %f, RENDER: %f", debug_update_elapsed, debug_render_elapsed);
-        }
         /* ----- */
 
         SDL_Delay(SLEEP_MS);
@@ -828,8 +862,8 @@ int main(void) {
 
     renderer = SDL_CreateRenderer(
         window, -1,
-        /* SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC */
-        SDL_RENDERER_ACCELERATED
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+        //SDL_RENDERER_ACCELERATED
     );
 
     if (renderer == NULL) {
@@ -843,6 +877,8 @@ int main(void) {
 
     rand_init(&RANDOM_ENEMY_POS, time(NULL));
     rand_init(&RANDOM_ENEMY_SIZE, time(NULL));
+
+    fps_init(&FPS);
 
     /* init player bullets */
     for (int i = 0; i < PLAYER_BULLET_MAX; i++) {

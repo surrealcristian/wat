@@ -1,6 +1,6 @@
 #include "enemy_manager.h"
 
-void enemy_manager_init(struct EnemyManager *self, tinymt32_t *rand_state, struct Enemy *enemies, int n, int w, int h, int v) {
+void enemy_manager_init(struct EnemyManager *self, uint32_t *rand_state, struct Enemy *enemies, int n, int w, int h, int v) {
     self->rand_state = rand_state;
 
     self->enemies = enemies;

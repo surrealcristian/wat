@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <inttypes.h>
 #include "SDL.h"
-#include "tinymt32.h"
+#include "xoshiro128.h"
 #include "util.h"
 #include "text.h"
 #include "keys.h"

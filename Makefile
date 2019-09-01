@@ -4,7 +4,7 @@ P=wat
 #SOURCES=wat.c tinymt32.c
 OBJECTS=\
 		wat.o \
-		tinymt32.o \
+		xoshiro128.o \
 		util.o \
 		text.o \
 		config.o \
